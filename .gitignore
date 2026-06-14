@@ -1,0 +1,31 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Environment variables
+.env
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+#DB
+GR_DataBase/context.gr
+
+
+# Cache directories
+GR_Docs/doc/cache/
+GR_Docs/xlsx/cache/
+GR_Docs/pptx/cache/
+
+# OS files
+.DS_Store
+Thumbs.db

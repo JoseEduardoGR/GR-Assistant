@@ -1,0 +1,26 @@
+Crea un script en Python usando la librería openpyxl que genere un archivo Excel (.xlsx) profesional y visualmente atractivo.
+El archivo es sobre: [DESCRIBE TU DOCUMENTO AQUÍ]
+El archivo de salida debe llamarse: [NOMBRE_ARCHIVO].xlsx
+Diseño visual:
+
+La paleta de colores debe ser coherente con la temática (ej: verde para salud/farmacia, azul marino para finanzas, naranja para logística, morado para tecnología, etc.)
+Encabezados principales con fondo de color sólido oscuro y texto blanco, bold
+Sub-encabezados en tono medio del mismo color
+Filas alternas en tono muy claro del mismo color para facilitar la lectura
+Celdas de input (valores que el usuario puede cambiar) con texto en azul "0000CC"
+Celdas de fórmulas con texto en negro "000000"
+Celdas que requieren atención o actualización con fondo amarillo "FFF9C4"
+Bordes finos en gris para datos, bordes medianos en color de acento para totales
+
+Requisitos técnicos obligatorios:
+
+Usar siempre PatternFill("solid", fgColor=...) para rellenos; nunca GradientFill
+Usar fórmulas de Excel para todos los cálculos (sumas, porcentajes, totales); nunca calcular valores en Python y hardcodearlos
+Anchos de columna definidos explícitamente con column_dimensions
+Alturas de fila definidas con row_dimensions
+Alineación explícita en cada celda (Alignment(horizontal=..., vertical="center"))
+Formato de número en celdas monetarias: '#,##0" MXN";(#,##0" MXN");"-"'
+Formato de porcentaje: '0.0%'
+Celdas combinadas (merge_cells) para títulos y secciones
+El archivo debe guardarse con wb.save("NOMBRE_ARCHIVO.xlsx")
+Al final del script, imprimir confirmación de que el archivo fue generado

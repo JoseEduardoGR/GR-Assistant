@@ -1,0 +1,52 @@
+Crea un script en Node.js usando la librería pptxgenjs de npm que genere un archivo PowerPoint (.pptx) profesional y visualmente atractivo.
+El documento es sobre: [DESCRIBE TU PRESENTACIÓN AQUÍ]
+El archivo de salida debe llamarse: [NOMBRE_ARCHIVO].pptx
+Número aproximado de slides: [N slides]
+
+Diseño visual:
+
+La paleta de colores, estilo y tono visual deben ser coherentes con la temática (ej: azul institucional para presentaciones corporativas, verde para salud, tonos cálidos para temas creativos, etc.)
+Slide de portada con fondo oscuro, título grande y subtítulo elegante
+Slide de cierre con fondo oscuro que haga "sandwich" visual con la portada
+Slides de contenido con fondo claro para contraste
+Tipografía Georgia para títulos y Calibri para cuerpo
+Tablas con encabezados en color sólido con texto blanco y filas alternas en tono suave
+Secciones con layout variado: tarjetas, grids 2x2, columnas, timelines
+Espaciado generoso y respiro visual entre elementos
+
+Requisitos técnicos obligatorios:
+
+El script debe ejecutarse con: node script.cjs  (usar require, NO import/export)
+Usar pres.layout = "LAYOUT_16x9" (10" × 5.625")
+Todas las coordenadas y dimensiones en pulgadas (números decimales)
+NUNCA usar "#" en colores hex — SIEMPRE sin el símbolo (ej: "FF0000" no "#FF0000")
+NUNCA codificar opacidad en el string de color (ej: "00000020") — usar la propiedad opacity separada
+NUNCA usar unicode "•" para bullets — usar { bullet: true } en las opciones del texto
+NUNCA repetir el mismo objeto de opciones entre dos llamadas — usar una función que retorne un objeto fresco (pptxgenjs muta los objetos in-place)
+Usar breakLine: true entre items de texto en array, NO "\n"
+Para sombras: usar offset positivo siempre, nunca negativo
+NUNCA usar ROUNDED_RECTANGLE con bordes de acento rectangulares — usar RECTANGLE para alineación limpia
+Variedad de layouts por slide — no repetir la misma estructura dos veces seguidas
+
+IMPORTANTE — API válida de pptxgenjs:
+Shapes disponibles: pres.shapes.RECTANGLE, OVAL, LINE, ROUNDED_RECTANGLE
+Charts disponibles: pres.charts.BAR, LINE, PIE, DOUGHNUT, SCATTER, AREA, RADAR
+Alineación de texto: "left", "center", "right"
+Alineación vertical: "top", "middle", "bottom"
+Para bullets: { text: "item", options: { bullet: true, breakLine: true } }
+Para listas numeradas: { bullet: { type: "number" } }
+Para sombras: { type: "outer", blur: N, offset: N, angle: N, color: "XXXXXX", opacity: 0.0-1.0 }
+Para imágenes: { path: "ruta" } o { data: "image/png;base64,..." }
+Para tablas: slide.addTable(rows, { x, y, w, colW: [...], border: { pt: N, color: "XXXXXX" } })
+
+EJEMPLO DE VALORES CORRECTOS:
+- color: "6B0F1A"  (NO "#6B0F1A")
+- shadow: { type: "outer", blur: 8, offset: 2, angle: 135, color: "000000", opacity: 0.15 }
+- slide.addText("Título", { x: 0.5, y: 0.3, w: 9, h: 0.8, fontSize: 32, fontFace: "Georgia", bold: true, color: "FFFFFF" })
+- slide.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: 10, h: 1.1, fill: { color: "1B2A4A" } })
+- const makeShadow = () => ({ type: "outer", blur: 6, offset: 2, angle: 135, color: "000000", opacity: 0.12 })
+
+Estructura sugerida por slide:
+- Slide 1: Portada (fondo oscuro, título grande centrado, subtítulo, línea decorativa dorada/de acento, cita o tagline, footer con fecha)
+- Slides 2-N-1: Contenido variado (una sección por slide, layout diferente en cada una)
+- Slide N: Cierre (fondo oscuro como portada, "Gracias" o mensaje final, subtítulo del deck)

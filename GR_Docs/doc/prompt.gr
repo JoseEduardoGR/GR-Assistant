@@ -1,0 +1,42 @@
+Crea un script en Node.js usando la librería docx de npm que genere un archivo Word (.docx) profesional y visualmente atractivo.
+El documento es sobre: [DESCRIBE TU DOCUMENTO AQUÍ]
+El archivo de salida debe llamarse: [NOMBRE_ARCHIVO].docx
+Diseño visual:
+
+La paleta de colores, estilo y tono visual deben ser coherentes con la temática del documento (ej: azul institucional para documentos legales, verde para salud, colores cálidos para documentos creativos, etc.)
+Encabezado y pie de página con título y numeración
+Tipografía Arial con tamaños diferenciados para títulos, subtítulos y cuerpo
+Tablas con encabezados en color sólido con texto blanco, filas alternas en tono suave, bordes definidos
+Secciones separadas con títulos en color de acento
+Espaciado generoso y legible
+
+Requisitos técnicos obligatorios:
+
+Usar WidthType.DXA en todas las tablas, nunca porcentajes
+Definir columnWidths en la tabla Y width en cada celda individualmente
+Usar ShadingType.CLEAR para sombreado, nunca ShadingType.SOLID
+Nunca usar \n dentro de un TextRun, usar párrafos separados
+Nunca insertar bullets con caracteres unicode, usar LevelFormat.BULLET
+El script debe poder ejecutarse directamente con node script.mjs
+TODOS los valores numéricos (size, width, spacing, etc.) DEBEN ser números enteros válidos, NUNCA NaN o undefined
+
+IMPORTANTE - Exports válidos de la librería docx:
+SOLO puedes importar estos elementos de "docx":
+- Document, Packer, Paragraph, TextRun, HeadingLevel
+- Table, TableRow, TableCell, WidthType, ShadingType, AlignmentType
+- Header, Footer, PageNumber, PageOrientation
+- BorderStyle (NO TableBorder, NO TableBorderStyle)
+- LevelFormat, Numbering
+- VerticalAlign, TableLayoutType
+- TabStopPosition, TabStopType
+- UnderlineType
+
+NO USES: TableBorder, TableBorderStyle, ThemeColor, ni ningún export que no esté en la lista anterior.
+
+Para bordes de tabla usa: borders: { top: { color: "...", size: 4, val: BorderStyle.SINGLE }, ... }
+
+EJEMPLO DE VALORES CORRECTOS:
+- size: 28 (NO "28pt", NO NaN, NO undefined)
+- width: { size: 5000, type: WidthType.DXA }
+- spacing: { before: 200, after: 400 }
+- color: "1B2A4A" (hexadecimal sin #)

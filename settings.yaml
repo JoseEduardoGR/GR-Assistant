@@ -1,0 +1,10 @@
+context_file: assets/context.gr
+default_mode: none
+model: google/gemini-3.1-flash-lite
+port: 8000
+prompt_docx: GR_Docs/doc/prompt.gr
+prompt_pptx: GR_Docs/pptx/prompt.gr
+prompt_xlsx: GR_Docs/xlsx/prompt.gr
+prompt_database: GR_DataBase/context.gr
+verbose: false
+
