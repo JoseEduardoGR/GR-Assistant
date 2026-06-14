@@ -23,11 +23,8 @@ class BaseDocumentGenerator:
         self.engine = OpenRouterEngine(settings_path, verbose=verbose)
         self.prompt_path = self.settings.get(prompt_key, default_prompt_path)
         
-        # Rutas relativas o absolutas
-        if "xlsx" in cache_folder: # Mantiene compatibilidad con el código anterior de excel.py
-            self.cache_dir = Path(project_root) / cache_folder
-        else:
-            self.cache_dir = Path(cache_folder)
+        # Rutas relativas o absolutas - Siempre ancladas al project_root
+        self.cache_dir = Path(project_root) / cache_folder
             
         self.output_dir = self.cache_dir / "output"
         self._expected_output = None
