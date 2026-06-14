@@ -45,7 +45,7 @@ def require_api_key(f):
                 return jsonify({"error": "API Key inválida"}), 401
                 
             # Cargar preferencias del usuario
-            cur.execute("SELECT prompt_style, theme_colors, ai_model FROM user_preferences WHERE user_id = %s", (user['id'],))
+            cur.execute("SELECT prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path FROM user_preferences WHERE user_id = %s", (user['id'],))
             prefs = cur.fetchone() or {}
             
             # Añadir la info del usuario al objeto request de Flask para usarlo en el endpoint

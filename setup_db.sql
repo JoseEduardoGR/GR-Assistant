@@ -15,6 +15,9 @@ CREATE TABLE user_preferences (
     prompt_style TEXT,
     theme_colors JSONB,
     ai_model VARCHAR(255),
+    company_info TEXT,
+    database_schema TEXT,
+    logo_path VARCHAR(255),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -51,8 +51,15 @@ class BaseDocumentGenerator:
             with open(self.prompt_path) as f:
                 base_prompt = f.read().strip()
                 
-            if user_preferences and 'prompt_style' in user_preferences:
-                base_prompt += f"\n\nInstrucciones Específicas del Usuario:\n{user_preferences['prompt_style']}"
+            if user_preferences:
+                if 'prompt_style' in user_preferences and user_preferences['prompt_style']:
+                    base_prompt += f"\n\nInstrucciones Específicas del Usuario:\n{user_preferences['prompt_style']}"
+                
+                if 'company_info' in user_preferences and user_preferences['company_info']:
+                    base_prompt += f"\n\nInformación de la Empresa del Usuario (para membretes, logos y referencias):\n{user_preferences['company_info']}"
+                    
+                if 'database_schema' in user_preferences and user_preferences['database_schema']:
+                    base_prompt += f"\n\nContexto / Esquema de Base de Datos del Usuario (para reportes y Excels exactos):\n{user_preferences['database_schema']}"
                 
             return base_prompt
         except FileNotFoundError:

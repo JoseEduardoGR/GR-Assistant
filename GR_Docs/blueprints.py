@@ -470,9 +470,12 @@ def manage_preferences():
             
         # Para POST
         data = request.get_json()
-        prompt_style = data.get('prompt_style', '')
-        theme_colors = data.get('theme_colors', '{}')
-        ai_model = data.get('ai_model')
+        prompt_style = data.get('prompt_style', request.user_preferences.get('prompt_style', ''))
+        theme_colors = data.get('theme_colors', request.user_preferences.get('theme_colors', '{}'))
+        ai_model = data.get('ai_model', request.user_preferences.get('ai_model'))
+        company_info = data.get('company_info', request.user_preferences.get('company_info', ''))
+        database_schema = data.get('database_schema', request.user_preferences.get('database_schema', ''))
+        logo_path = data.get('logo_path', request.user_preferences.get('logo_path', ''))
         
         ALLOWED_MODELS = [
             "meta-llama/llama-3.3-70b-instruct:free",
@@ -491,11 +494,16 @@ def manage_preferences():
             theme_colors = json.dumps(theme_colors)
             
         cur.execute("""
-            INSERT INTO user_preferences (user_id, prompt_style, theme_colors, ai_model) 
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO user_preferences (user_id, prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (user_id) DO UPDATE 
-            SET prompt_style = EXCLUDED.prompt_style, theme_colors = EXCLUDED.theme_colors, ai_model = EXCLUDED.ai_model
-        """, (user_id, prompt_style, theme_colors, ai_model))
+            SET prompt_style = EXCLUDED.prompt_style, 
+                theme_colors = EXCLUDED.theme_colors, 
+                ai_model = EXCLUDED.ai_model,
+                company_info = EXCLUDED.company_info,
+                database_schema = EXCLUDED.database_schema,
+                logo_path = EXCLUDED.logo_path
+        """, (user_id, prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path))
         
         conn.commit()
         cur.close()
