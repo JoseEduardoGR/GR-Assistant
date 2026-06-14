@@ -22,7 +22,7 @@ TODOS los valores numéricos (size, width, spacing, etc.) DEBEN ser números ent
 
 IMPORTANTE - Exports válidos de la librería docx:
 SOLO puedes importar estos elementos de "docx":
-- Document, Packer, Paragraph, TextRun, HeadingLevel
+- Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun
 - Table, TableRow, TableCell, WidthType, ShadingType, AlignmentType
 - Header, Footer, PageNumber, PageOrientation
 - BorderStyle (NO TableBorder, NO TableBorderStyle)
@@ -40,3 +40,17 @@ EJEMPLO DE VALORES CORRECTOS:
 - width: { size: 5000, type: WidthType.DXA }
 - spacing: { before: 200, after: 400 }
 - color: "1B2A4A" (hexadecimal sin #)
+
+EJEMPLO OBLIGATORIO DE INSERCIÓN DE IMAGEN DESDE DISCO DURO:
+Si te doy una ruta absoluta de una imagen física para usar en el encabezado, pie o documento, DEBES usar "fs.readFileSync" y "ImageRun" así:
+import fs from 'fs';
+//...
+new Paragraph({
+    children: [
+        new ImageRun({
+            data: fs.readFileSync("/ruta/absoluta.png"),
+            transformation: { width: 600, height: 100 }
+        })
+    ]
+})
+(NO uses Media.addImage)
