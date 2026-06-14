@@ -1,13 +1,13 @@
 import os
 import yaml
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, Response
 from colorama import Fore
 
 # Imports relativos desde el paquete GR_Docs
 from .doc.word import WordScriptGenerator
 from .xlsx.excel import ExcelScriptGenerator
 from .pptx.powerpoint import PowerPointScriptGenerator
-from .security import require_api_key, get_db_connection, encrypt_credentials
+from .security import require_api_key, get_db_connection, encrypt_credentials, require_admin_key
 
 # Cargar configuración
 with open("settings.yaml") as f:
@@ -670,9 +670,62 @@ def configure_client_db():
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "message": "Credenciales de DB guardadas de forma segura"}), 200
+        return jsonify({"success": True, "message": "Conexión a BD guardada exitosamente"}), 200
+        
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": f"Error al guardar credenciales: {str(e)}"}), 500
+
+@api_bp.route('/admin/approve', methods=['POST'])
+@require_admin_key
+def approve_user():
+    """Aprueba un usuario pendiente mediante su email."""
+    data = request.json
+    target_email = data.get('email')
+    
+    if not target_email:
+        return jsonify({"error": "Debe proporcionar el email del usuario a aprobar"}), 400
+        
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("UPDATE users SET is_approved = TRUE WHERE email = %s RETURNING id", (target_email,))
+        updated = cur.fetchone()
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        if updated:
+            return jsonify({"success": True, "message": f"Usuario {target_email} aprobado correctamente"})
+        else:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+            
+    except Exception as e:
+        return jsonify({"error": f"Error al aprobar usuario: {str(e)}"}), 500
+
+@api_bp.route('/admin/logs/stream')
+@require_admin_key
+def stream_logs():
+    """Stream de consola en tiempo real (SSE)."""
+    def generate():
+        import subprocess
+        process = subprocess.Popen(['journalctl', '-u', 'grdocs.service', '-f', '-n', '50'], 
+                                 stdout=subprocess.PIPE, 
+                                 stderr=subprocess.PIPE, 
+                                 text=True)
+        try:
+            while True:
+                line = process.stdout.readline()
+                if line:
+                    yield f"data: {line}\n\n"
+                else:
+                    import time
+                    time.sleep(0.1)
+        except GeneratorExit:
+            process.terminate()
+            
+    return Response(generate(), mimetype='text/event-stream')
 
 import subprocess
 import threading

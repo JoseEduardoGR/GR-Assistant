@@ -41,6 +41,12 @@ EJEMPLO DE VALORES CORRECTOS:
 - spacing: { before: 200, after: 400 }
 - color: "1B2A4A" (hexadecimal sin #)
 
+FORMA OBLIGATORIA DE GUARDAR EL ARCHIVO (¡Packer.toFile NO EXISTE!):
+Usa siempre Packer.toBuffer:
+Packer.toBuffer(doc).then((buffer) => {
+    fs.writeFileSync("[NOMBRE_ARCHIVO].docx", buffer);
+});
+
 EJEMPLO OBLIGATORIO DE INSERCIÓN DE IMAGEN DESDE DISCO DURO:
 Si te doy una ruta absoluta de una imagen física para usar en el encabezado, pie o documento, DEBES usar "fs.readFileSync" y "ImageRun" así:
 import fs from 'fs';

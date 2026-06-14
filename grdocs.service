@@ -1,0 +1,16 @@
+[Unit]
+Description=GR Docs API Service
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/GR-Assistant
+ExecStart=/home/ubuntu/GR-Assistant/venv/bin/python main.py
+Restart=always
+RestartSec=1
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=grdocs
+
+[Install]
+WantedBy=multi-user.target

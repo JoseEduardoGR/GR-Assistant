@@ -38,11 +38,14 @@ def require_api_key(f):
             cur = conn.cursor()
             
             # Buscar el usuario con esa API Key
-            cur.execute("SELECT id, email FROM users WHERE api_key = %s", (api_key,))
+            cur.execute("SELECT id, email, is_approved FROM users WHERE api_key = %s", (api_key,))
             user = cur.fetchone()
             
             if not user:
                 return jsonify({"error": "API Key inválida"}), 401
+                
+            if not user.get('is_approved'):
+                return jsonify({"error": "Cuenta en sala de espera. Tu API Key debe ser aprobada por un administrador antes de poder usarla."}), 403
                 
             # Cargar preferencias del usuario
             cur.execute("SELECT prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path FROM user_preferences WHERE user_id = %s", (user['id'],))
@@ -57,6 +60,37 @@ def require_api_key(f):
             
         except Exception as e:
             return jsonify({"error": f"Error de autenticación: {str(e)}"}), 500
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_admin_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('x-api-key')
+        if not api_key:
+            return jsonify({"error": "API Key de administrador requerida"}), 401
+            
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            
+            cur.execute("SELECT id, email, is_approved, is_admin FROM users WHERE api_key = %s", (api_key,))
+            user = cur.fetchone()
+            
+            if not user:
+                return jsonify({"error": "API Key inválida"}), 401
+                
+            if not user.get('is_approved') or not user.get('is_admin'):
+                return jsonify({"error": "Acceso denegado. Se requieren permisos de Administrador."}), 403
+                
+            request.user = user
+            
+            cur.close()
+            conn.close()
+            
+        except Exception as e:
+            return jsonify({"error": f"Error de autenticación admin: {str(e)}"}), 500
             
         return f(*args, **kwargs)
     return decorated_function
