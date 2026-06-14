@@ -479,7 +479,8 @@ def manage_preferences():
             "google/gemini-2.0-flash-exp:free",
             "qwen/qwen-2.5-72b-instruct:free",
             "deepseek/deepseek-chat:free",
-            "mistralai/mistral-nemo:free"
+            "mistralai/mistral-nemo:free",
+            "nex-agi/nex-n2-pro:free"
         ]
         
         if ai_model and ai_model not in ALLOWED_MODELS:
