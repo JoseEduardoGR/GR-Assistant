@@ -213,86 +213,25 @@ sk-or-v1-1234567890...
 
 ## 🧠 Modelos de IA Disponibles
 
-GR Docs soporta múltiples modelos de IA a través de OpenRouter:
+Los usuarios de la API pueden configurar su modelo preferido a través del endpoint `/preferences` enviando el campo `ai_model`. 
+Actualmente, los siguientes 5 modelos gratuitos de alto rendimiento están permitidos:
 
-```mermaid
-pie title Distribución de Modelos por Proveedor
-    "Meta (Llama)" : 25
-    "Google (Gemini)" : 20
-    "Alibaba (Qwen)" : 20
-    "DeepSeek" : 15
-    "Mistral" : 10
-    "Otros" : 10
-```
-
-<details>
-<summary><strong>👇 Ver Lista Completa de Modelos Soportados</strong></summary>
-
-<br>
-
-> [!NOTE]
-> Todos estos modelos están disponibles a través de **OpenRouter** con una sola API key.
-
----
-
-### 🟣 Meta – Llama (Recomendado para uso gratuito)
-
-[![Llama 3.3 70B](https://img.shields.io/badge/Llama_3.3_70B-6E60F6?style=for-the-badge&logo=meta)](#)
-[![Llama 3.2 3B](https://img.shields.io/badge/Llama_3.2_3B-6E60F6?style=for-the-badge&logo=meta)](#)
+1. `meta-llama/llama-3.3-70b-instruct:free` (Llama 3.3)
+2. `google/gemini-2.0-flash-exp:free` (Gemini 2.0)
+3. `qwen/qwen-2.5-72b-instruct:free` (Qwen 2.5)
+4. `deepseek/deepseek-chat:free` (DeepSeek V3)
+5. `mistralai/mistral-nemo:free` (Mistral)
 
 > [!TIP]
-> Llama 3.3 70B es gratuito y ofrece excelente calidad para generar documentos.
+> Llama 3.3 70B y Gemini 2.0 Flash son los recomendados por defecto por su gran calidad de generación.
 
----
+### 🔧 Configurar Modelo Global (Fallback)
 
-### 🔵 Google – Gemini
-
-[![Gemini 2.0 Flash](https://img.shields.io/badge/Gemini_2.0_Flash-4285F4?style=for-the-badge&logo=google)](#)
-[![Gemini 1.5 Pro](https://img.shields.io/badge/Gemini_1.5_Pro-4285F4?style=for-the-badge&logo=google)](#)
-[![Gemma 3 27B](https://img.shields.io/badge/Gemma_3_27B-4285F4?style=for-the-badge&logo=google)](#)
-
----
-
-### � Alibaba – Qwen
-
-[![Qwen3 Coder 480B](https://img.shields.io/badge/Qwen3_Coder_480B-D32F2F?style=for-the-badge)](#)
-[![Qwen2.5 72B](https://img.shields.io/badge/Qwen2.5_72B-D32F2F?style=for-the-badge)](#)
-
----
-
-### � DeepSeek
-
-[![DeepSeek R1](https://img.shields.io/badge/DeepSeek_R1-F9A825?style=for-the-badge)](#)
-[![DeepSeek V3](https://img.shields.io/badge/DeepSeek_V3-F9A825?style=for-the-badge)](#)
-
----
-
-### 🔵 Mistral
-
-[![Mistral Nemo](https://img.shields.io/badge/Mistral_Nemo-00A3E0?style=for-the-badge)](#)
-[![Mistral 7B](https://img.shields.io/badge/Mistral_7B-00A3E0?style=for-the-badge)](#)
-
----
-
-### � Anthropic – Claude (Requiere créditos)
-
-[![Claude Sonnet 4.6](https://img.shields.io/badge/Claude_Sonnet_4.6-8A2BE2?style=for-the-badge&logo=anthropic)](#)
-[![Claude Sonnet 3.5](https://img.shields.io/badge/Claude_Sonnet_3.5-8A2BE2?style=for-the-badge&logo=anthropic)](#)
-
-> [!WARNING]
-> Los modelos de Claude requieren créditos en OpenRouter, no son gratuitos.
-
----
-
-</details>
-
-### 🔧 Configurar Modelo
-
-Edita `settings.yaml` para cambiar el modelo:
+Edita `settings.yaml` para cambiar el modelo que usarán los usuarios que no hayan especificado ninguno:
 
 ```yaml
-# AI model (use list_models.py to see available free models)
-model: meta-llama/llama-3.3-70b-instruct:free
+# AI model default
+model: qwen/qwen-2.5-72b-instruct:free
 ```
 
 > [!NOTE]
@@ -329,7 +268,7 @@ Esto iniciará un servidor FastAPI/Flask en `http://localhost:8000` (el modo de 
 - `POST /database/generate-query` - Generar consulta con IA
 - `POST /database/report` - Generar reporte desde base de datos
 - `GET /database/tables` - Listar tablas de la base de datos
-- **`POST /preferences`** - (SaaS) Subir o descargar preferencias de estilos por cliente
+- `POST /preferences` - Subir/descargar preferencias de usuario (ej. `{"ai_model": "mistralai/mistral-nemo:free"}`)
 - **`POST /files`** - (SaaS) Subir logos y plantillas
 - **`POST /client-db`** - (SaaS) Configurar conexión segura a BD de clientes
 - **`POST /webhook/github`** - Webhook para auto-actualizar el servidor (`git pull`)
@@ -408,6 +347,14 @@ curl -X POST http://localhost:8000/database/report \
 
 > [!NOTE]
 > Para usar el módulo de base de datos, consulta [GR_DataBase/README.md](GR_DataBase/README.md)
+
+## 📊 Monitoreo de Usuarios
+
+Puedes visualizar en tiempo real todos los usuarios de la plataforma y el modelo de IA que están usando mediante el script de monitoreo (se conecta a la BD local):
+
+```bash
+python monitor.py
+```
 
 ---
 

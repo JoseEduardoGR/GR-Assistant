@@ -472,17 +472,29 @@ def manage_preferences():
         data = request.get_json()
         prompt_style = data.get('prompt_style', '')
         theme_colors = data.get('theme_colors', '{}')
+        ai_model = data.get('ai_model')
+        
+        ALLOWED_MODELS = [
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemini-2.0-flash-exp:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+            "deepseek/deepseek-chat:free",
+            "mistralai/mistral-nemo:free"
+        ]
+        
+        if ai_model and ai_model not in ALLOWED_MODELS:
+            return jsonify({"error": f"Modelo no permitido. Debe ser uno de: {ALLOWED_MODELS}"}), 400
         
         import json
         if isinstance(theme_colors, dict):
             theme_colors = json.dumps(theme_colors)
             
         cur.execute("""
-            INSERT INTO user_preferences (user_id, prompt_style, theme_colors) 
-            VALUES (%s, %s, %s)
+            INSERT INTO user_preferences (user_id, prompt_style, theme_colors, ai_model) 
+            VALUES (%s, %s, %s, %s)
             ON CONFLICT (user_id) DO UPDATE 
-            SET prompt_style = EXCLUDED.prompt_style, theme_colors = EXCLUDED.theme_colors
-        """, (user_id, prompt_style, theme_colors))
+            SET prompt_style = EXCLUDED.prompt_style, theme_colors = EXCLUDED.theme_colors, ai_model = EXCLUDED.ai_model
+        """, (user_id, prompt_style, theme_colors, ai_model))
         
         conn.commit()
         cur.close()

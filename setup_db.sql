@@ -14,6 +14,7 @@ CREATE TABLE user_preferences (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     prompt_style TEXT,
     theme_colors JSONB,
+    ai_model VARCHAR(255),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -84,12 +84,13 @@ class Engine:
 
     # ─── Prompt ───────────────────────────────────────────────────────────────
 
-    def process(self, prompt: str, image_path: str = None) -> str:
+    def process(self, prompt: str, image_path: str = None, override_model: str = None) -> str:
         """Construye el prompt completo y lo envía al modelo.
 
         Args:
             prompt:     Texto del usuario.
             image_path: Ruta opcional a una imagen (jpg, png, gif, webp).
+            override_model: Modelo específico a usar en lugar del predeterminado.
         """
         if not prompt.strip():
             return ""
@@ -100,7 +101,7 @@ class Engine:
             content = prompt
 
         self.history.append({"role": "user", "content": content})
-        response = self._run(use_vision=image_path is not None)
+        response = self._run(use_vision=image_path is not None, override_model=override_model)
         self.history.append({"role": "assistant", "content": response})
         return response
 
@@ -137,7 +138,7 @@ class Engine:
         messages.extend(self.history)
         return messages
 
-    def _run(self, use_vision: bool = False) -> str:
+    def _run(self, use_vision: bool = False, override_model: str = None) -> str:
         """Envía el prompt al modelo y retorna la respuesta. Subclases pueden sobreescribir."""
         raise NotImplementedError(
             "Subclases deben implementar _run(). "
@@ -175,7 +176,7 @@ class OpenRouterEngine(Engine):
         self.api_key = _load_api_key()
         super().__init__(settings_path, verbose)
 
-    def _run(self, use_vision: bool = False) -> str:
+    def _run(self, use_vision: bool = False, override_model: str = None) -> str:
         """Llama a la API de OpenRouter y retorna el texto de respuesta.
 
         Si use_vision=True, usa el modelo multimodal y envía la imagen en base64.
@@ -183,7 +184,10 @@ class OpenRouterEngine(Engine):
         if not self.api_key:
             return "[Error] API key no configurada."
 
-        model = self.model_vision if use_vision else self.model
+        if override_model:
+            model = override_model
+        else:
+            model = self.model_vision if use_vision else self.model
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
