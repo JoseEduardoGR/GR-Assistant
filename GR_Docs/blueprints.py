@@ -582,6 +582,24 @@ def auto_update_task():
 @api_bp.route('/webhook/github', methods=['POST'])
 def github_webhook():
     """Webhook para auto-actualización cuando se hace un push en GitHub."""
+    import hmac
+    import hashlib
+    
+    secret = os.getenv("GITHUB_WEBHOOK_SECRET", "GRcode2026$")
+    signature = request.headers.get('X-Hub-Signature-256')
+    
+    if not signature:
+        return jsonify({"success": False, "error": "Falta la firma de GitHub"}), 401
+        
+    expected_signature = "sha256=" + hmac.new(
+        secret.encode('utf-8'),
+        request.get_data(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    if not hmac.compare_digest(signature, expected_signature):
+        return jsonify({"success": False, "error": "Firma inválida"}), 403
+
     # Ejecuta la actualización en un hilo en segundo plano para poder responder inmediatamente a GitHub
     threading.Thread(target=auto_update_task).start()
     return jsonify({"success": True, "message": "Actualización en progreso"}), 200
