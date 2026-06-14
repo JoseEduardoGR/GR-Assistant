@@ -85,7 +85,7 @@ def handle_runtime_error(e, dependency_name="Node.js"):
             "retry_after": 12,
             "current_model": settings.get("model", "unknown")
         }), 429
-    elif dependency_name.lower() in error_msg.lower():
+    elif f"no such file or directory: '{dependency_name.lower()}'" in error_msg.lower() or f"command not found: {dependency_name.lower()}" in error_msg.lower():
         return jsonify({
             "success": False,
             "error": f"{dependency_name} no está instalado o no está en el PATH",
