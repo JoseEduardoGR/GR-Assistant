@@ -45,8 +45,8 @@ class BaseDocumentGenerator:
                 print(f"[BaseGenerator] settings.yaml no encontrado en '{path}'")
             return {}
 
-    def _load_prompt(self, user_preferences: dict = None) -> str:
-        """Carga el prompt y añade preferencias del usuario si existen."""
+    def _load_prompt(self, user_preferences: dict = None, user_files_context: list = None) -> str:
+        """Carga el prompt y añade preferencias y archivos visuales del usuario si existen."""
         try:
             with open(self.prompt_path) as f:
                 base_prompt = f.read().strip()
@@ -60,6 +60,13 @@ class BaseDocumentGenerator:
                     
                 if 'database_schema' in user_preferences and user_preferences['database_schema']:
                     base_prompt += f"\n\nContexto / Esquema de Base de Datos del Usuario (para reportes y Excels exactos):\n{user_preferences['database_schema']}"
+            
+            if user_files_context:
+                base_prompt += "\n\nRECURSOS GRÁFICOS DISPONIBLES EN EL SERVIDOR:"
+                base_prompt += "\nEl usuario ha subido los siguientes archivos gráficos. Las rutas absolutas a usar en tu código son:"
+                for f in user_files_context:
+                    base_prompt += f"\n - Ruta: '{f['path']}' (Etiqueta o propósito: '{f['name']}')"
+                base_prompt += "\n\nINSTRUCCIÓN CRÍTICA PARA RECURSOS: A MENOS que el usuario pida no usarlos, DEBES obligatoriamente incrustar estas imágenes en el documento utilizando el código apropiado para su propósito (ej. si su etiqueta dice 'encabezado', incrusta la imagen de esa ruta en el encabezado del documento ajustada al 100% de ancho)."
                 
             return base_prompt
         except FileNotFoundError:
@@ -81,8 +88,8 @@ class BaseDocumentGenerator:
         
         return '\n'.join(cleaned_lines)
 
-    def generate_script(self, user_request: str, previous_error: str = None, previous_code: str = None, user_preferences: dict = None) -> tuple[str, str]:
-        base_prompt = self._load_prompt(user_preferences)
+    def generate_script(self, user_request: str, previous_error: str = None, previous_code: str = None, user_preferences: dict = None, user_files_context: list = None) -> tuple[str, str]:
+        base_prompt = self._load_prompt(user_preferences, user_files_context)
         
         output_id = str(uuid.uuid4())
         output_filename = f"{output_id}{self.output_ext}"
@@ -169,7 +176,7 @@ Genera SOLO el código completo, sin explicaciones adicionales.
         except FileNotFoundError as e:
             return False, f"{self.runtime} no está instalado o no está en el PATH", str(e)
 
-    def generate_and_execute(self, user_request: str, user_preferences: dict = None) -> tuple[str, str]:
+    def generate_and_execute(self, user_request: str, user_preferences: dict = None, user_files_context: list = None) -> tuple[str, str]:
         """Genera y ejecuta con auto-corrección de hasta 5 intentos."""
         max_attempts = 5
         previous_error = None
@@ -183,7 +190,8 @@ Genera SOLO el código completo, sin explicaciones adicionales.
                 user_request=user_request, 
                 previous_error=previous_error, 
                 previous_code=previous_code,
-                user_preferences=user_preferences
+                user_preferences=user_preferences,
+                user_files_context=user_files_context
             )
             
             success, result_path_or_error, stderr = self.execute_script(script_path)

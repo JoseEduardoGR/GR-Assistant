@@ -269,7 +269,7 @@ Esto iniciará un servidor FastAPI/Flask en `http://localhost:8000` (el modo de 
 - `POST /database/report` - Generar reporte desde base de datos
 - `GET /database/tables` - Listar tablas de la base de datos
 - `POST /preferences` - Subir/descargar preferencias de usuario (ej. `{"ai_model": "mistralai/mistral-nemo:free"}`)
-- **`POST /files`** - (SaaS) Subir logos y plantillas
+- **`POST /files`** - (SaaS) Subir logos, encabezados y plantillas (soporta el campo `name` para etiquetas semánticas)
 - **`POST /client-db`** - (SaaS) Configurar conexión segura a BD de clientes
 - **`POST /webhook/github`** - Webhook para auto-actualizar el servidor (`git pull`)
 
@@ -344,6 +344,17 @@ curl -X POST http://localhost:8000/database/report \
 ```
 
 **Resultado:** Archivo Excel con datos de la base de datos
+
+### Ejemplo 6: Subir Imágenes y Recursos Gráficos Automáticos
+
+Sube un archivo asignándole un "nombre semántico" (ej. encabezado, logo). La IA lo usará automáticamente en los siguientes documentos que generes:
+
+```bash
+curl -X POST http://localhost:8000/files \
+  -H "x-api-key: grdocs_test_key_123" \
+  -F "file=@/ruta/a/tu/encabezado.png" \
+  -F "name=encabezado"
+```
 
 > [!NOTE]
 > Para usar el módulo de base de datos, consulta [GR_DataBase/README.md](GR_DataBase/README.md)

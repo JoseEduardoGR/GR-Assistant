@@ -155,6 +155,43 @@ def health():
     })
 
 
+def extract_user_files(user_id):
+    """
+    Extrae los archivos de la base de datos para el usuario y los guarda localmente.
+    Retorna una lista de diccionarios con el nombre semántico y la ruta física.
+    """
+    import os
+    from pathlib import Path
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT file_name, file_data FROM user_files WHERE user_id = %s", (user_id,))
+    files = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    if not files:
+        return []
+        
+    # Crear directorio temporal para el usuario
+    base_dir = Path(os.path.abspath(__file__)).parent / "cache" / "users" / str(user_id)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    
+    extracted_files = []
+    for f in files:
+        semantic_name = f['file_name']
+        file_path = base_dir / semantic_name
+        
+        with open(file_path, 'wb') as out_file:
+            out_file.write(f['file_data'])
+            
+        extracted_files.append({
+            "name": semantic_name,
+            "path": str(file_path)
+        })
+        
+    return extracted_files
+
 @api_bp.route('/docx', methods=['POST'])
 @require_api_key
 def generate_docx():
@@ -193,11 +230,13 @@ def generate_docx():
         
         # Obtener generador
         word_gen = get_word_generator()
+        user_files_context = extract_user_files(request.user['id'])
         
         # Generar y ejecutar
         script_path, docx_path = word_gen.generate_and_execute(
             user_request, 
-            user_preferences=getattr(request, 'user_preferences', {})
+            user_preferences=getattr(request, 'user_preferences', {}),
+            user_files_context=user_files_context
         )
         
         # Verificar si hubo error en la generación del script
@@ -293,11 +332,13 @@ def generate_xlsx():
         
         # Obtener generador
         excel_gen = get_excel_generator()
+        user_files_context = extract_user_files(request.user['id'])
         
         # Generar y ejecutar
         script_path, xlsx_path = excel_gen.generate_and_execute(
             user_request,
-            user_preferences=getattr(request, 'user_preferences', {})
+            user_preferences=getattr(request, 'user_preferences', {}),
+            user_files_context=user_files_context
         )
         
         # Verificar si hubo error en la generación del script
@@ -393,11 +434,13 @@ def generate_pptx():
         
         # Obtener generador
         pptx_gen = get_pptx_generator()
+        user_files_context = extract_user_files(request.user['id'])
         
         # Generar y ejecutar
         script_path, pptx_path = pptx_gen.generate_and_execute(
             user_request,
-            user_preferences=getattr(request, 'user_preferences', {})
+            user_preferences=getattr(request, 'user_preferences', {}),
+            user_files_context=user_files_context
         )
         
         # Verificar si hubo error en la generación del script
@@ -573,6 +616,17 @@ def upload_file():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
         
+    semantic_name = request.form.get('name', '').strip()
+    if semantic_name:
+        import os
+        _, ext = os.path.splitext(file.filename)
+        if not ext:
+            ext = '.png'
+        if not semantic_name.endswith(ext):
+            semantic_name += ext
+    else:
+        semantic_name = file.filename
+        
     try:
         file_data = file.read()
         conn = get_db_connection()
@@ -580,13 +634,13 @@ def upload_file():
         
         cur.execute(
             "INSERT INTO user_files (user_id, file_name, file_data) VALUES (%s, %s, %s)",
-            (request.user['id'], file.filename, psycopg2.Binary(file_data))
+            (request.user['id'], semantic_name, psycopg2.Binary(file_data))
         )
         conn.commit()
         cur.close()
         conn.close()
         
-        return jsonify({"success": True, "message": f"Archivo {file.filename} guardado exitosamente"}), 200
+        return jsonify({"success": True, "message": f"Archivo guardado exitosamente con nombre: {semantic_name}"}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
