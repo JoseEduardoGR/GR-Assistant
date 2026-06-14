@@ -456,6 +456,56 @@ def generate_pptx():
 
 # Nuevos Endpoints SaaS
 
+import secrets
+import psycopg2
+
+@api_bp.route('/register', methods=['POST'])
+def register_user():
+    """Registra un nuevo usuario y devuelve una API Key segura."""
+    try:
+        data = request.get_json()
+        if not data or 'email' not in data or 'username' not in data:
+            return jsonify({"success": False, "error": "Los campos 'email' y 'username' son requeridos"}), 400
+            
+        email = data['email'].strip()
+        username = data['username'].strip()
+        
+        if not email or not username:
+            return jsonify({"success": False, "error": "El 'email' y 'username' no pueden estar vacíos"}), 400
+            
+        # Generar API key segura (ej. gr_A8xN...)
+        api_key = "gr_" + secrets.token_urlsafe(32)
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        try:
+            cur.execute(
+                "INSERT INTO users (email, username, api_key) VALUES (%s, %s, %s) RETURNING id",
+                (email, username, api_key)
+            )
+            user_id = cur.fetchone()['id']
+            conn.commit()
+            
+            return jsonify({
+                "success": True, 
+                "message": "Usuario registrado exitosamente. GUARDA TU API KEY, NO PODRÁS VERLA DE NUEVO.",
+                "email": email,
+                "api_key": api_key,
+                "user_id": user_id
+            }), 201
+            
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            return jsonify({"success": False, "error": "El email ya está registrado"}), 409
+            
+        finally:
+            cur.close()
+            conn.close()
+            
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @api_bp.route('/preferences', methods=['GET', 'POST'])
 @require_api_key
 def manage_preferences():
