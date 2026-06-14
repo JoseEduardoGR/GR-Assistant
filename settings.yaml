@@ -1,7 +1,7 @@
 context_file: assets/context.gr
 default_mode: none
 # AI model default
-model: google/gemini-2.0-flash-exp:freelash-lite
+model: google/gemini-2.0-flash-exp:free
 port: 8000
 prompt_docx: GR_Docs/doc/prompt.gr
 prompt_pptx: GR_Docs/pptx/prompt.gr
