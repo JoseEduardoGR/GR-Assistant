@@ -686,8 +686,9 @@ def auto_update_task():
         subprocess.run(["git", "pull", "origin", "main"], check=True)
         print("[Webhook] Actualizando dependencias...")
         subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-        print("[Webhook] Reiniciando servidor...")
-        # Forzar el reinicio cerrando el proceso actual
+        print("[Webhook] Reiniciando servidor en 2 segundos...")
+        # Forzar el reinicio cerrando el proceso actual (systemd lo reiniciará automáticamente)
+        time.sleep(2)
         os._exit(0)
     except Exception as e:
         print(f"[Webhook] Error durante la actualización: {e}")
