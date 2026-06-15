@@ -4,13 +4,13 @@
 <img src="assets/GRDocs.jpg" width="100%" style="display:block;">
 </td>
 <td>
-<h1>GR Docs</h1>
-<em>"Tu Generador de Documentos Profesionales Impulsado por IA"</em>
+<h1>GR Assistant</h1>
+<em>"Tu Asistente SaaS Impulsado por IA para Análisis de Bases de Datos y Documentos"</em>
 </td>
 </tr>
 </table>
 
-![Banner](https://img.shields.io/badge/GR_Docs-v1.0.0-blueviolet?style=for-the-badge&logo=python)
+![Banner](https://img.shields.io/badge/GR_Assistant-v1.0.0-blueviolet?style=for-the-badge&logo=python)
 ![Powered by Python](https://img.shields.io/badge/Powered%20by-Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Powered by Node.js](https://img.shields.io/badge/Powered%20by-Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![AI Powered](https://img.shields.io/badge/AI-Powered-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
@@ -19,7 +19,7 @@
 
 ## 📋 Tabla de Contenidos
 
-- [Sobre GR Docs](#-sobre-gr-docs)
+- [Sobre GR Assistant](#-sobre-gr-docs)
 - [Características](#-características-destacadas)
 - [Flujo de Trabajo](#-flujo-de-trabajo)
 - [Instalación](#️-instalación-y-configuración)
@@ -31,12 +31,12 @@
 
 ---
 
-## 💡 Sobre GR Docs
+## 💡 Sobre GR Assistant
 
-**GR Docs** es un **generador de documentos profesionales** que utiliza **Inteligencia Artificial** para crear archivos **Word**, **Excel**, **PowerPoint** y **PDF** de forma automática.
+**GR Assistant** es un **generador de documentos profesionales** que utiliza **Inteligencia Artificial** para crear archivos **Word**, **Excel**, **PowerPoint** y **PDF** de forma automática.
 
 > [!NOTE]
-> GR Docs utiliza modelos de IA avanzados para generar código que crea documentos profesionales. No es un simple template, ¡es un generador inteligente!
+> GR Assistant utiliza modelos de IA avanzados para generar código que crea documentos profesionales. No es un simple template, ¡es un generador inteligente!
 
 Gracias a **Llama, Gemini, Qwen y otros modelos de IA**, puedes:
 
@@ -47,7 +47,7 @@ Gracias a **Llama, Gemini, Qwen y otros modelos de IA**, puedes:
 * ⚡ Ejecutar todo desde la **línea de comandos** o **API REST**
 
 > [!TIP]
-> GR Docs es una API REST diseñada para integrarse fácilmente como un microservicio (SaaS) en tus aplicaciones web o móviles.
+> GR Assistant es una API REST diseñada para integrarse fácilmente como un microservicio (SaaS) en tus aplicaciones web o móviles.
 > Ya no cuenta con modo interactivo de terminal, enfocándose 100% en rendimiento y escalabilidad.
 
 ---
@@ -56,7 +56,7 @@ Gracias a **Llama, Gemini, Qwen y otros modelos de IA**, puedes:
 
 ```mermaid
 graph TD
-    A[👤 Usuario] -->|Describe Documento| B(🤖 GR Docs)
+    A[👤 Usuario] -->|Describe Documento| B(🤖 GR Assistant)
     B -->|Selecciona Modelo IA| C{🧠 Llama/Gemini/Qwen}
     C -->|Genera Script| D[📜 Script JS/Python]
     D -->|Ejecuta| E[⚙️ Librería docx/openpyxl/pptxgenjs]
@@ -85,7 +85,7 @@ graph TD
 | **Manejo de Errores IA** | Auto-corrección inteligente de hasta 5 intentos si el script falla |
 
 > [!IMPORTANT]
-> GR Docs requiere una API key de OpenRouter para funcionar. Hay muchos modelos completamente gratuitos disponibles.
+> GR Assistant requiere una API key de OpenRouter para funcionar. Hay muchos modelos completamente gratuitos disponibles.
 
 ---
 
@@ -145,7 +145,7 @@ Esto instalará:
 
 ### 5️⃣ Configurar la API Key y Credenciales
 
-Para que **GR Docs** funcione necesitas:
+Para que **GR Assistant** funcione necesitas:
 1. Una **API key de OpenRouter** (para la IA)
 2. **Credenciales de SQL Server** (opcional, solo si usarás el módulo de base de datos)
 
@@ -245,7 +245,7 @@ python list_models.py
 
 ---
 
-## 🚀 Cómo Usar la API de GR Docs
+## 🚀 Cómo Usar la API de GR Assistant
 
 ### 🌐 Iniciar el Servidor
 
@@ -256,7 +256,7 @@ python main.py
 Esto iniciará un servidor FastAPI/Flask en `http://localhost:8000` (el modo de terminal ha sido depreciado).
 
 > [!NOTE]
-> El modo API permite integrar GR Docs en tus aplicaciones. Ver [API_EXAMPLES.md](API_EXAMPLES.md) para documentación completa.
+> El modo API permite integrar GR Assistant en tus aplicaciones. Ver [API_EXAMPLES.md](API_EXAMPLES.md) para documentación completa.
 
 **Endpoints disponibles:**
 - `GET /` - Información de la API
@@ -289,7 +289,7 @@ curl -X POST http://localhost:8000/docx \
 
 ## 🚀 Guía Paso a Paso (Modo SaaS y Bases de Datos)
 
-El flujo ideal para utilizar GR Docs con conexión a bases de datos y personalización corporativa es el siguiente:
+El flujo ideal para utilizar GR Assistant con conexión a bases de datos y personalización corporativa es el siguiente:
 
 ### 1️⃣ Obtener una API Key (Registro)
 
@@ -303,7 +303,7 @@ curl -X POST http://localhost:8000/register \
 
 ### 2️⃣ Conectar tu Base de Datos (Supabase / Postgres / SQL Server)
 
-Vincula tu base de datos con tu API Key. GR Docs encriptará esta conexión por seguridad. *(Nota: Si usas Supabase en IPv4, asegúrate de usar el Session Pooler en el puerto `6543` o `5432` según asigne Supabase, y codifica tu contraseña con `%24` si usas signos de dólar).*
+Vincula tu base de datos con tu API Key. GR Assistant encriptará esta conexión por seguridad. *(Nota: Si usas Supabase en IPv4, asegúrate de usar el Session Pooler en el puerto `6543` o `5432` según asigne Supabase, y codifica tu contraseña con `%24` si usas signos de dólar).*
 
 ```bash
 curl -X POST http://localhost:8000/client-db \
