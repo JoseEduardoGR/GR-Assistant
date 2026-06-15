@@ -163,7 +163,7 @@ La consulta debe ser compatible con SQL Server."""
         
         return df
     
-    def query_and_report(self, user_request: str, report_type: str = "excel") -> str:
+    def query_and_report(self, user_request: str, report_type: str = "excel", user_files_context: list = None) -> str:
         """
         Genera una consulta (con hasta 5 intentos si falla), la ejecuta y crea un reporte.
         """
@@ -209,15 +209,15 @@ La consulta debe ser compatible con SQL Server."""
         
         # Generar reporte según el tipo
         if report_type.lower() == "excel":
-            return self._generate_excel_report(df, user_request)
+            return self._generate_excel_report(df, user_request, user_files_context)
         elif report_type.lower() == "word":
-            return self._generate_word_report(df, user_request)
+            return self._generate_word_report(df, user_request, user_files_context)
         elif report_type.lower() == "powerpoint":
-            return self._generate_powerpoint_report(df, user_request)
+            return self._generate_powerpoint_report(df, user_request, user_files_context)
         else:
             raise ValueError(f"Tipo de reporte no soportado: {report_type}")
     
-    def _generate_excel_report(self, df: pd.DataFrame, description: str) -> str:
+    def _generate_excel_report(self, df: pd.DataFrame, description: str, user_files_context: list = None) -> str:
         """Genera un reporte Excel usando el módulo xlsx."""
         from GR_Docs.xlsx.excel import ExcelScriptGenerator
         
@@ -231,17 +231,19 @@ La consulta debe ser compatible con SQL Server."""
         # Obtener nombres de columnas reales
         columnas = ", ".join(df.columns.tolist())
         
-        prompt = f"""Crea un archivo Excel con los siguientes datos de la base de datos:
-
+        prompt = f"""Crea un script de Python que genere un reporte Excel.
+        
+Instrucciones especiales de diseño solicitadas por el usuario:
 {description}
 
-Los datos están en el archivo CSV: {temp_csv}
+Asegúrate de aplicar todos los estilos, colores, imágenes y requerimientos visuales que el usuario haya especificado arriba.
+
+El archivo CSV temporal está en: {temp_csv}
 
 IMPORTANTE: Las columnas del CSV son exactamente: {columnas}
 
 NO inventes nombres de columnas. Usa SOLO las columnas que existen en el CSV.
 
-Lee el CSV completo sin filtrar y crea un reporte profesional con:
 - Lee TODOS los datos del CSV sin filtrar
 - Formato de tabla con todas las filas
 - Encabezados en negrita
@@ -288,14 +290,14 @@ for column in ws.columns:
 wb.save('ruta_del_archivo.xlsx')
 ```"""
         
-        script_path, xlsx_path = excel_gen.generate_and_execute(prompt)
+        script_path, xlsx_path = excel_gen.generate_and_execute(prompt, user_files_context=user_files_context)
         
         if self.verbose:
             print(f"[DatabaseQueries] Reporte Excel generado: {xlsx_path}")
         
         return xlsx_path
     
-    def _generate_word_report(self, df: pd.DataFrame, description: str) -> str:
+    def _generate_word_report(self, df: pd.DataFrame, description: str, user_files_context: list = None) -> str:
         """Genera un reporte Word usando el módulo doc."""
         from GR_Docs.doc.word import WordScriptGenerator
         
@@ -304,26 +306,30 @@ wb.save('ruta_del_archivo.xlsx')
         
         word_gen = WordScriptGenerator(verbose=self.verbose)
         
-        prompt = f"""Crea un documento Word con un reporte de base de datos:
+        prompt = f"""Crea un documento Word con un reporte de base de datos.
+        
+MUY IMPORTANTE - INSTRUCCIONES DE DISEÑO DEL USUARIO:
+{description}
 
-Título: {description}
+Debes cumplir estrictamente con cualquier petición sobre formato, colores, tablas, encabezados, pies de página o imágenes (si solicita imágenes como logotipos, asegúrate de insertarlas correctamente usando las herramientas disponibles).
 
-Datos:
+REGLA SOBRE IMÁGENES EN LOS DATOS:
+Si los datos de la base incluyen rutas locales de archivos de imagen (ej. /var/www/... o C:/...) o URLs web, debes escribir código en tu script Node.js para procesarlas por cada fila.
+Usa `fs.readFileSync(ruta)` para rutas locales, o peticiones HTTP/fetch para URLs, y luego inserta el buffer resultante usando `ImageRun` dentro de la celda de la tabla. Envuelve la lectura de imágenes en un bloque `try/catch` para que si una imagen no existe, insertes simplemente un texto de "Sin foto" y el script no se caiga.
+
+Datos a incluir:
 {data_text}
 
-Incluye:
-- Título principal
-- Tabla formateada con los datos
-- Resumen de resultados (cantidad de registros)"""
+Asegúrate de presentar los datos de forma atractiva y respetando el diseño solicitado."""
         
-        script_path, docx_path = word_gen.generate_and_execute(prompt)
+        script_path, docx_path = word_gen.generate_and_execute(prompt, user_files_context=user_files_context)
         
         if self.verbose:
             print(f"[DatabaseQueries] Reporte Word generado: {docx_path}")
         
         return docx_path
     
-    def _generate_powerpoint_report(self, df: pd.DataFrame, description: str) -> str:
+    def _generate_powerpoint_report(self, df: pd.DataFrame, description: str, user_files_context: list = None) -> str:
         """Genera un reporte PowerPoint usando el módulo pptx."""
         from GR_Docs.pptx.powerpoint import PowerPointScriptGenerator
         
@@ -332,21 +338,20 @@ Incluye:
         
         pptx_gen = PowerPointScriptGenerator(verbose=self.verbose)
         
-        prompt = f"""Crea una presentación PowerPoint con un reporte de base de datos:
+        prompt = f"""Crea una presentación PowerPoint con un reporte de base de datos.
+        
+MUY IMPORTANTE - INSTRUCCIONES DE DISEÑO DEL USUARIO:
+{description}
 
-Título: {description}
+Debes cumplir estrictamente con cualquier petición sobre colores, formato, tablas o imágenes (si el usuario pide imágenes, descárgalas o diséñalas usando las utilidades).
 
-Datos (primeras 10 filas):
+Total de registros disponibles en la BD: {len(df)}
+Datos a mostrar (primeras 10 filas):
 {data_text}
 
-Total de registros: {len(df)}
-
-Incluye:
-- Diapositiva de título
-- Diapositiva con tabla de datos
-- Diapositiva con resumen"""
+Asegúrate de que la presentación sea muy atractiva y cumpla todas las reglas de diseño solicitadas por el usuario."""
         
-        script_path, pptx_path = pptx_gen.generate_and_execute(prompt)
+        script_path, pptx_path = pptx_gen.generate_and_execute(prompt, user_files_context=user_files_context)
         
         if self.verbose:
             print(f"[DatabaseQueries] Reporte PowerPoint generado: {pptx_path}")

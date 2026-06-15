@@ -224,11 +224,15 @@ def generate_report():
             
         conn_string = decrypt_credentials(record['encrypted_credentials'])
         
+        # Extraer imágenes del usuario (encabezados, logos)
+        from GR_Docs.blueprints import extract_user_files
+        user_files_context = extract_user_files(user_id)
+        
         with DatabaseQueries() as db_queries:
             if not db_queries.connect(conn_string):
                 return jsonify({"status": "error", "message": "Fallo al conectar a la base de datos del cliente."}), 500
                 
-            report_path = db_queries.query_and_report(user_request, report_type)
+            report_path = db_queries.query_and_report(user_request, report_type, user_files_context)
         
         return send_file(
             report_path,
@@ -237,7 +241,9 @@ def generate_report():
         )
         
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e), "trace": traceback.format_exc()}), 500
 
 
 @database_bp.route('/test-connection', methods=['POST'])
