@@ -55,7 +55,10 @@ new Paragraph({
     children: [
         new ImageRun({
             data: fs.readFileSync("/ruta/absoluta.png"),
-            transformation: { width: 600, height: 100 }
+            transformation: { 
+                width: 600, 
+                height: 100 // ¡CRÍTICO! Ajusta esta proporción según el tipo de imagen para que NO se deforme. Encabezados: 600x100. Pie de página: 600x70. Logos: 100x100.
+            }
         })
     ]
 })
