@@ -276,13 +276,64 @@ Esto iniciará un servidor FastAPI/Flask en `http://localhost:8000` (el modo de 
 > [!WARNING]
 > Todos los endpoints requieren que envíes el header `x-api-key: TU_API_KEY`.
 
-**Ejemplo rápido:**
+**Ejemplo rápido (Texto libre):**
 ```bash
 curl -X POST http://localhost:8000/docx \
   -H "Content-Type: application/json" \
   -H "x-api-key: grdocs_test_key_123" \
-  -d '{"request":"Informe de ventas Q1 2024","download":true,"send_file":true}' \
+  -d '{"request":"Informe de ventas Q1 2024","download":true}' \
   --output informe.docx
+```
+
+---
+
+## 🚀 Guía Paso a Paso (Modo SaaS y Bases de Datos)
+
+El flujo ideal para utilizar GR Docs con conexión a bases de datos y personalización corporativa es el siguiente:
+
+### 1️⃣ Obtener una API Key (Registro)
+
+Regístrate para obtener tu llave maestra. Guárdala muy bien, no volverá a mostrarse.
+
+```bash
+curl -X POST http://localhost:8000/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"tu@email.com", "username":"TuNombre"}'
+```
+
+### 2️⃣ Conectar tu Base de Datos (Supabase / Postgres / SQL Server)
+
+Vincula tu base de datos con tu API Key. GR Docs encriptará esta conexión por seguridad. *(Nota: Si usas Supabase en IPv4, asegúrate de usar el Session Pooler en el puerto `6543` o `5432` según asigne Supabase, y codifica tu contraseña con `%24` si usas signos de dólar).*
+
+```bash
+curl -X POST http://localhost:8000/client-db \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: TU_API_KEY_AQUI" \
+  -d '{"connection_string": "postgresql://postgres:tu_password@host:puerto/postgres"}'
+```
+
+### 3️⃣ Guardar tus Imágenes y Logos Corporativos (Opcional)
+
+Sube las imágenes que la IA usará para adornar tus documentos. Asígnales nombres descriptivos.
+
+```bash
+curl -X POST http://localhost:8000/files \
+  -H "x-api-key: TU_API_KEY_AQUI" \
+  -F "file=@ruta/a/tu/logo_empresa.png" \
+  -F "semantic_name=logo_oficial.png" \
+  -F "description=Logo corporativo principal"
+```
+
+### 4️⃣ Generar Reportes Inteligentes desde la Base de Datos
+
+¡Pide tu reporte! La IA extraerá los datos, aplicará el diseño que pidas e incrustará tus logos.
+
+```bash
+curl -X POST http://localhost:8000/database/report \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: TU_API_KEY_AQUI" \
+  -d '{"request":"Genera un reporte de todos los alumnos, pon encabezados color guinda e inserta el logo oficial", "report_type":"word"}' \
+  --output "Reporte_Magico.docx"
 ```
 
 ---
