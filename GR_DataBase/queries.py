@@ -43,13 +43,15 @@ class DatabaseQueries:
             return {}
     
     def _load_prompt(self) -> str:
-        """Carga el prompt desde el archivo especificado en settings."""
+        """Carga el prompt desde el archivo."""
         try:
-            with open(self.prompt_path) as f:
+            # Construir ruta absoluta basada en la ubicación de este archivo
+            abs_prompt_path = os.path.join(os.path.dirname(__file__), "context.gr")
+            with open(abs_prompt_path) as f:
                 return f.read().strip()
         except FileNotFoundError:
             if self.verbose:
-                print(f"[DatabaseQueries] Prompt no encontrado en '{self.prompt_path}'")
+                print(f"[DatabaseQueries] Prompt no encontrado en '{abs_prompt_path}'")
             return ""
     
     def connect(self, database: str = None) -> bool:
@@ -147,104 +149,63 @@ La consulta debe ser compatible con SQL Server."""
     def execute_query(self, query: str) -> pd.DataFrame:
         """
         Ejecuta una consulta SQL y retorna los resultados como DataFrame.
-        
-        Args:
-            query: Consulta SQL a ejecutar
-            
-        Returns:
-            DataFrame con los resultados
+        Lanza excepción si falla, para que la IA la atrape.
         """
-        try:
-            results = self.db.execute_query(query)
+        rows, columns = self.db.execute_query(query)
+        
+        if not rows:
+            return pd.DataFrame(columns=columns if columns else [])
             
-            if not results:
-                return pd.DataFrame()
-            
-            # Obtener nombres de columnas
-            columns = [desc[0] for desc in self.db.cursor.description]
-            
-            # Crear DataFrame
-            df = pd.DataFrame.from_records(results, columns=columns)
-            
-            if self.verbose:
-                print(f"[DatabaseQueries] Consulta ejecutada: {len(df)} filas obtenidas")
-            
-            return df
-            
-        except Exception as e:
-            print(f"[DatabaseQueries] Error al ejecutar consulta: {e}")
-            return pd.DataFrame()
+        df = pd.DataFrame.from_records(rows, columns=columns)
+        
+        if self.verbose:
+            print(f"[DatabaseQueries] Consulta ejecutada: {len(df)} filas obtenidas")
+        
+        return df
     
     def query_and_report(self, user_request: str, report_type: str = "excel") -> str:
         """
-        Genera una consulta, la ejecuta y crea un reporte.
-        
-        Args:
-            user_request: Descripción de lo que se quiere consultar
-            report_type: Tipo de reporte ('excel', 'word', 'powerpoint')
-            
-        Returns:
-            Ruta del reporte generado
+        Genera una consulta (con hasta 5 intentos si falla), la ejecuta y crea un reporte.
         """
-        # Si piden información de tablas, usar consulta directa
-        if "información" in user_request.lower() and "tabla" in user_request.lower():
-            query = """
-            SELECT 
-                TABLE_NAME as Tabla,
-                COLUMN_NAME as Columna,
-                DATA_TYPE as TipoDato,
-                IS_NULLABLE as Nullable,
-                CHARACTER_MAXIMUM_LENGTH as LongitudMaxima
-            FROM INFORMATION_SCHEMA.COLUMNS
-            ORDER BY TABLE_NAME, ORDINAL_POSITION
-            """
-            print(f"[DatabaseQueries] ===== USANDO CONSULTA PREDEFINIDA =====")
+        max_attempts = 5
+        attempt = 1
+        query = ""
+        error_history = ""
+        df = pd.DataFrame()
+        
+        schema_info = self._get_schema_info() if self.db.connection else None
+        
+        while attempt <= max_attempts:
+            print(f"[DatabaseQueries] ===== INTENTO {attempt}/{max_attempts} =====")
             print(f"Solicitud: {user_request}")
-            print(f"Consulta: {query}")
-            print(f"[DatabaseQueries] =====================================")
-        else:
-            # Generar consulta con IA
-            print(f"[DatabaseQueries] ===== GENERANDO CONSULTA CON IA =====")
-            print(f"Solicitud: {user_request}")
-            query = self.generate_query(user_request)
-            print(f"[DatabaseQueries] ===================================")
-        
-        print(f"[DatabaseQueries] ===== EJECUTANDO CONSULTA =====")
-        print(f"Query: {query}")
-        print(f"[DatabaseQueries] =================================")
-        
-        df = self.execute_query(query)
-        
-        if df.empty:
-            # Intentar una consulta más simple si la primera falla
-            if self.verbose:
-                print(f"[DatabaseQueries] Primera consulta no retornó resultados, intentando consulta simplificada...")
             
-            # Para cuentas domésticas sin pagar, usar consulta directa
-            if "doméstica" in user_request.lower() or "domestica" in user_request.lower():
-                if "no" in user_request.lower() and "pag" in user_request.lower():
-                    query = """
-                    SELECT TOP 1000
-                        paaClaveUsuario,
-                        paaNumeroContrato,
-                        paaApellidoPaterno,
-                        paaApellidoMaterno,
-                        paaNombres,
-                        paaDomicilio,
-                        paaUltimoBimestrePagado,
-                        paaUltimoAñoPagado,
-                        paaCuentaActiva
-                    FROM PadronUsuariosAgua
-                    WHERE paaIdUsoPrincipal = '1'
-                        AND paaCuentaActiva = 1
-                    ORDER BY paaUltimoAñoPagado DESC, paaUltimoBimestrePagado DESC
-                    """
-                    if self.verbose:
-                        print(f"[DatabaseQueries] Usando consulta predefinida para cuentas domésticas sin pagar")
-                    df = self.execute_query(query)
-        
+            prompt_context = user_request
+            if error_history:
+                prompt_context += f"\n\nERROR ANTERIOR:\nLa base de datos devolvió este error al ejecutar tu consulta anterior:\n{error_history}\nPor favor, corrige tu consulta SQL basándote estrictamente en el esquema proporcionado y devuélvela reparada."
+                
+            query = self.generate_query(prompt_context, schema_info)
+            
+            try:
+                print(f"[DatabaseQueries] Ejecutando: {query}")
+                df = self.execute_query(query)
+                
+                if df.empty:
+                    print("[DatabaseQueries] Advertencia: La consulta no retornó datos (tabla vacía o criterios sin coincidencias).")
+                else:
+                    print("[DatabaseQueries] Consulta exitosa con datos.")
+                    
+                break # Éxito, salir del bucle
+                
+            except Exception as e:
+                error_history = str(e)
+                print(f"[DatabaseQueries] Error de SQL: {error_history}")
+                attempt += 1
+                
+        if attempt > max_attempts:
+            raise ValueError(f"No se pudo generar una consulta SQL válida después de {max_attempts} intentos. Último error: {error_history}")
+            
         if df.empty:
-            raise ValueError("La consulta no retornó resultados. Verifica que existan datos que cumplan los criterios solicitados.")
+            raise ValueError("La consulta se ejecutó correctamente pero no retornó resultados. Verifica que existan datos que cumplan los criterios solicitados.")
         
         # Generar reporte según el tipo
         if report_type.lower() == "excel":

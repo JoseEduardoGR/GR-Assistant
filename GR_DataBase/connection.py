@@ -1,194 +1,117 @@
 """
-Módulo de conexión a SQL Server usando pyodbc
+Módulo de conexión a Base de Datos usando SQLAlchemy
 """
 
 import os
-import pyodbc
+from sqlalchemy import create_engine, text
 from typing import Optional
-from dotenv import load_dotenv
-
-# Cargar variables de entorno
-load_dotenv()
-
 
 class DatabaseConnection:
-    """Maneja la conexión a SQL Server."""
+    """Maneja la conexión a cualquier Base de Datos mediante SQLAlchemy."""
     
-    def __init__(self):
-        """Inicializa la conexión con las credenciales del .env"""
-        self.server = os.getenv('DB_SERVER', '127.0.0.1,1433')
-        self.user = os.getenv('DB_USER', 'Lecturas')
-        self.password = os.getenv('DB_PASSWORD', '@Lecturas2025@')
-        self.database = os.getenv('DB_NAME', '')
-        self.driver = os.getenv('DB_DRIVER', 'ODBC Driver 17 for SQL Server')
-        self.connection: Optional[pyodbc.Connection] = None
-        self.cursor: Optional[pyodbc.Cursor] = None
+    def __init__(self, connection_string: str = None):
+        """Inicializa la conexión."""
+        self.connection_string = connection_string
+        self.engine = None
+        self.connection = None
     
-    def connect(self, database: str = None) -> bool:
-        """
-        Establece la conexión a la base de datos.
-        
-        Args:
-            database: Nombre de la base de datos (opcional, usa DB_NAME del .env si no se especifica)
-            
-        Returns:
-            True si la conexión fue exitosa, False en caso contrario
-        """
+    def connect(self, connection_string: str = None) -> bool:
+        """Establece la conexión a la base de datos."""
         try:
-            db_name = database or self.database
+            conn_str = connection_string or self.connection_string
+            if not conn_str:
+                print("[DatabaseConnection] Error: connection_string no proporcionada.")
+                return False
+                
+            print(f"[DatabaseConnection] Intentando conectar usando SQLAlchemy...")
             
-            # Construir connection string con timeouts mejorados
-            if db_name:
-                conn_str = (
-                    f"DRIVER={{{self.driver}}};"
-                    f"SERVER={self.server};"
-                    f"DATABASE={db_name};"
-                    f"UID={self.user};"
-                    f"PWD={self.password};"
-                    "TrustServerCertificate=yes;"
-                    "Connection Timeout=30;"
-                    "Command Timeout=60;"
-                )
-            else:
-                # Conexión sin especificar base de datos
-                conn_str = (
-                    f"DRIVER={{{self.driver}}};"
-                    f"SERVER={self.server};"
-                    f"UID={self.user};"
-                    f"PWD={self.password};"
-                    "TrustServerCertificate=yes;"
-                    "Connection Timeout=30;"
-                    "Command Timeout=60;"
-                )
+            # Crear engine
+            self.engine = create_engine(conn_str, pool_pre_ping=True)
+            self.connection = self.engine.connect()
             
-            print(f"[DatabaseConnection] Intentando conectar a {self.server}...")
-            print(f"[DatabaseConnection] Usuario: {self.user}")
-            print(f"[DatabaseConnection] Base de datos: {db_name or 'No especificada'}")
-            
-            self.connection = pyodbc.connect(conn_str, timeout=30)
-            self.cursor = self.connection.cursor()
-            
-            print(f"[DatabaseConnection] Conectado exitosamente a {self.server}")
-            if db_name:
-                print(f"[DatabaseConnection] Base de datos: {db_name}")
-            
+            print(f"[DatabaseConnection] Conectado exitosamente")
             return True
             
-        except pyodbc.Error as e:
+        except Exception as e:
             print(f"[DatabaseConnection] Error al conectar: {e}")
-            print(f"[DatabaseConnection] SUGERENCIA: Verifica que SQL Server esté corriendo en {self.server}")
-            print(f"[DatabaseConnection] SUGERENCIA: Verifica las credenciales: usuario={self.user}")
             return False
     
     def disconnect(self):
         """Cierra la conexión a la base de datos."""
         try:
-            if self.cursor:
-                self.cursor.close()
             if self.connection:
                 self.connection.close()
+            if self.engine:
+                self.engine.dispose()
             print("[DatabaseConnection] Desconectado exitosamente")
         except Exception as e:
             print(f"[DatabaseConnection] Error al desconectar: {e}")
     
-    def execute_query(self, query: str, params: tuple = None) -> list:
-        """
-        Ejecuta una consulta SELECT y retorna los resultados.
-        
-        Args:
-            query: Consulta SQL a ejecutar
-            params: Parámetros para la consulta (opcional)
-            
-        Returns:
-            Lista de tuplas con los resultados
-        """
+    def execute_query(self, query: str, params: dict = None) -> tuple:
+        """Ejecuta una consulta SELECT y retorna (filas, columnas)."""
         try:
-            if not self.cursor:
+            if not self.connection:
                 raise Exception("No hay conexión activa. Llama a connect() primero.")
             
-            if params:
-                self.cursor.execute(query, params)
-            else:
-                self.cursor.execute(query)
+            result = self.connection.execute(text(query), params or {})
+            columns = list(result.keys())
+            rows = [tuple(row) for row in result.fetchall()]
+            return rows, columns
             
-            results = self.cursor.fetchall()
-            return results
-            
-        except pyodbc.Error as e:
+        except Exception as e:
             print(f"[DatabaseConnection] Error al ejecutar consulta: {e}")
-            return []
-    
-    def execute_non_query(self, query: str, params: tuple = None) -> int:
-        """
-        Ejecuta una consulta INSERT, UPDATE o DELETE.
-        
-        Args:
-            query: Consulta SQL a ejecutar
-            params: Parámetros para la consulta (opcional)
+            raise e  # Lanzamos el error para que la IA lo vea y pueda autocorregirse
             
-        Returns:
-            Número de filas afectadas
-        """
+    def execute_non_query(self, query: str, params: dict = None) -> int:
+        """Ejecuta una consulta INSERT, UPDATE o DELETE."""
         try:
-            if not self.cursor:
+            if not self.connection:
                 raise Exception("No hay conexión activa. Llama a connect() primero.")
             
-            if params:
-                self.cursor.execute(query, params)
-            else:
-                self.cursor.execute(query)
+            with self.connection.begin():
+                result = self.connection.execute(text(query), params or {})
+                return result.rowcount
             
-            self.connection.commit()
-            return self.cursor.rowcount
-            
-        except pyodbc.Error as e:
+        except Exception as e:
             print(f"[DatabaseConnection] Error al ejecutar consulta: {e}")
-            self.connection.rollback()
-            return 0
+            raise e
     
     def get_tables(self) -> list:
-        """
-        Obtiene la lista de tablas en la base de datos actual.
-        
-        Returns:
-            Lista de nombres de tablas
-        """
+        """Obtiene la lista de tablas en la base de datos actual."""
+        # Consulta genérica de ANSI SQL para información de tablas
         query = """
         SELECT TABLE_NAME 
         FROM INFORMATION_SCHEMA.TABLES 
         WHERE TABLE_TYPE = 'BASE TABLE'
         ORDER BY TABLE_NAME
         """
-        results = self.execute_query(query)
-        return [row[0] for row in results]
+        try:
+            rows, _ = self.execute_query(query)
+            return [row[0] for row in rows]
+        except Exception as e:
+            print(f"[DatabaseConnection] Warning get_tables: {e}")
+            return []
     
     def get_columns(self, table_name: str) -> list:
-        """
-        Obtiene la lista de columnas de una tabla.
-        
-        Args:
-            table_name: Nombre de la tabla
-            
-        Returns:
-            Lista de tuplas (nombre_columna, tipo_dato, es_nullable)
-        """
+        """Obtiene la lista de columnas de una tabla."""
         query = """
         SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE
         FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_NAME = ?
+        WHERE TABLE_NAME = :table_name
         ORDER BY ORDINAL_POSITION
         """
-        results = self.execute_query(query, (table_name,))
-        return [(row[0], row[1], row[2]) for row in results]
+        try:
+            rows, _ = self.execute_query(query, {"table_name": table_name})
+            return [(row[0], row[1], row[2]) for row in rows]
+        except:
+            return []
     
     def __enter__(self):
-        """Soporte para context manager."""
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Cierra la conexión al salir del context manager."""
         self.disconnect()
     
     def __repr__(self) -> str:
         status = "conectado" if self.connection else "desconectado"
-        return f"DatabaseConnection(server={self.server}, status={status})"
+        return f"DatabaseConnection(status={status})"

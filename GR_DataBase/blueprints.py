@@ -5,6 +5,7 @@ Blueprints de Flask para endpoints de base de datos
 import os
 from flask import Blueprint, request, jsonify, send_file
 from GR_DataBase.queries import DatabaseQueries
+from GR_Docs.security import require_api_key, get_db_connection, decrypt_credentials
 
 # Crear blueprint
 database_bp = Blueprint('database', __name__, url_prefix='/database')
@@ -197,35 +198,38 @@ def generate_query():
 
 
 @database_bp.route('/report', methods=['POST'])
+@require_api_key
 def generate_report():
-    """
-    Genera un reporte basado en una consulta en lenguaje natural.
-    
-    Body JSON:
-    {
-        "request": "descripción de lo que se quiere consultar",
-        "report_type": "excel|word|powerpoint",
-        "database": "nombre_base_datos"  // opcional
-    }
-    """
+    """Genera un reporte analizando la BD usando IA."""
     try:
         data = request.get_json()
         
         if not data or 'request' not in data:
-            return jsonify({
-                "status": "error",
-                "message": "Se requiere el campo 'request'"
-            }), 400
+            return jsonify({"status": "error", "message": "Se requiere el campo 'request'"}), 400
         
         user_request = data['request']
         report_type = data.get('report_type', 'excel')
-        database = data.get('database')
+        
+        # Recuperar cadena de conexión de la BD local
+        user_id = request.user['id']
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT encrypted_credentials FROM client_databases WHERE user_id = %s", (user_id,))
+        record = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not record:
+            return jsonify({"status": "error", "message": "No se encontraron credenciales de base de datos. Configúralas con /client-db primero."}), 400
+            
+        conn_string = decrypt_credentials(record['encrypted_credentials'])
         
         with DatabaseQueries() as db_queries:
-            db_queries.connect(database)
+            if not db_queries.connect(conn_string):
+                return jsonify({"status": "error", "message": "Fallo al conectar a la base de datos del cliente."}), 500
+                
             report_path = db_queries.query_and_report(user_request, report_type)
         
-        # Retornar el archivo
         return send_file(
             report_path,
             as_attachment=True,
@@ -233,10 +237,7 @@ def generate_report():
         )
         
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @database_bp.route('/test-connection', methods=['POST'])
