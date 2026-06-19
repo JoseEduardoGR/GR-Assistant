@@ -75,6 +75,8 @@ class BaseDocumentGenerator:
             return ""
 
     def _clean_script(self, content: str) -> str:
+        if not content:
+            return ""
         lines = content.split('\n')
         cleaned_lines = []
         in_code_block = False

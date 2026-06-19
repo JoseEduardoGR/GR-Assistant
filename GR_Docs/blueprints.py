@@ -215,9 +215,10 @@ Ejemplos de DATABASE_YES (requiere BD): "reporte de ventas", "calificaciones de 
 Ejemplos de DATABASE_NO (texto libre): "crea una carta de bienvenida", "redacta un documento sobre ética", "haz un contrato".
 Responde EXCLUSIVAMENTE con la palabra "DATABASE_YES" si requiere explícitamente extraer datos estructurados.
 Responde EXCLUSIVAMENTE con la palabra "DATABASE_NO" si es un documento de texto libre, académico o creativo."""
-    
-    response = engine.process(prompt).strip().upper()
-    return "DATABASE_YES" in response
+    response = engine.process(prompt)
+    if not response:
+        return False
+    return "DATABASE_YES" in response.strip().upper()
 
 def try_database_generation(user_id, user_request, report_type, user_files_context, should_download, data):
     """Intenta generar el reporte usando la BD. Retorna (True, final_path) o (False, error_response)."""
