@@ -32,7 +32,7 @@ print_logo() {
   \____|_| \_\_/   \_\___/___/_|___/\__\__,_|_| |_|\__|
 EOF
     echo -e "${NC}"
-    echo -e "   ✨ ${CYAN}Tu Asistente SaaS Impulsado por IA${NC} ✨"
+    echo -e "                   ${CYAN}v1.0.0${NC}"
     echo ""
 }
 
