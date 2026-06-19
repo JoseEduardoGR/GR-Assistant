@@ -174,7 +174,7 @@ menu_report() {
       -o "${filename}.${ext}")
       
     if [ "$HTTP_CODE" -eq 200 ]; then
-        print_success "¡Reporte Generado con Éxito!"
+        print_success "¡Documento Generado con Éxito!"
         echo -e "Archivo guardado como: ${BOLD}${filename}.${ext}${NC} en la carpeta actual."
     else
         print_error "Ocurrió un error (Código: $HTTP_CODE)."
@@ -183,8 +183,97 @@ menu_report() {
     fi
 }
 
+menu_upload() {
+    echo -e "\n${BOLD}=== 4. Subir un Archivo (Logo / Plantilla) ===${NC}"
+    check_api_key || return
+    
+    echo -e "Ingresa la ruta absoluta o relativa del archivo en tu computadora."
+    echo -e "${CYAN}Ejemplo: ./logo.png o /home/usuario/plantilla.xlsx${NC}"
+    read -p "Ruta del archivo: " filepath < /dev/tty
+    
+    if [ ! -f "$filepath" ]; then
+        print_error "El archivo no existe en esa ruta."
+        return
+    fi
+    
+    echo -e "\n¿Con qué nombre quieres que la IA conozca este archivo? (Opcional)"
+    echo -e "${CYAN}Ejemplo: 'logo_empresa'${NC}"
+    read -p "Nombre: " semantic_name < /dev/tty
+    
+    echo -e "\nSubiendo archivo..."
+    
+    if [ -z "$semantic_name" ]; then
+        RESPONSE=$(curl -s -X POST "$BASE_URL/files" \
+          -H "x-api-key: $API_KEY" \
+          -F "file=@$filepath")
+    else
+        RESPONSE=$(curl -s -X POST "$BASE_URL/files" \
+          -H "x-api-key: $API_KEY" \
+          -F "file=@$filepath" \
+          -F "name=$semantic_name")
+    fi
+    
+    SUCCESS=$(echo $RESPONSE | grep -o '"success":\s*true')
+    if [ -n "$SUCCESS" ]; then
+        print_success "Archivo subido exitosamente."
+    else
+        ERROR_MSG=$(echo $RESPONSE | grep -o '"error":\s*"[^"]*' | cut -d'"' -f4)
+        print_error "Error: ${ERROR_MSG:-No se pudo subir el archivo}"
+    fi
+}
+
+menu_preferences() {
+    echo -e "\n${BOLD}=== 5. Preferencias de IA y Estilo ===${NC}"
+    check_api_key || return
+    
+    echo -e "Configura tu entorno. Deja en blanco los campos que no quieras cambiar."
+    read -p "Nombre / Info de tu Empresa: " company_info < /dev/tty
+    read -p "Estilo de Redacción (ej. 'Formal, alegre'): " prompt_style < /dev/tty
+    
+    echo -e "\nModelos disponibles:"
+    echo "1) qwen/qwen-2.5-72b-instruct:free (Recomendado)"
+    echo "2) meta-llama/llama-3.3-70b-instruct:free"
+    echo "3) google/gemini-2.0-flash-exp:free"
+    echo "4) No cambiar modelo"
+    read -p "Elige (1-4): " model_op < /dev/tty
+    
+    ai_model=""
+    case $model_op in
+        1) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
+        2) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
+        3) ai_model="google/gemini-2.0-flash-exp:free" ;;
+    esac
+    
+    # Construir JSON
+    JSON_DATA="{"
+    [ -n "$company_info" ] && JSON_DATA+="\"company_info\": \"$company_info\","
+    [ -n "$prompt_style" ] && JSON_DATA+="\"prompt_style\": \"$prompt_style\","
+    [ -n "$ai_model" ] && JSON_DATA+="\"ai_model\": \"$ai_model\","
+    JSON_DATA=${JSON_DATA%,} # Remove last comma
+    JSON_DATA+="}"
+    
+    if [ "$JSON_DATA" == "}" ]; then
+        print_info "No se hicieron cambios."
+        return
+    fi
+    
+    echo -e "\nActualizando..."
+    RESPONSE=$(curl -s -X POST "$BASE_URL/preferences" \
+      -H "Content-Type: application/json" \
+      -H "x-api-key: $API_KEY" \
+      -d "$JSON_DATA")
+      
+    SUCCESS=$(echo $RESPONSE | grep -o '"success":\s*true')
+    if [ -n "$SUCCESS" ]; then
+        print_success "Preferencias guardadas exitosamente."
+    else
+        ERROR_MSG=$(echo $RESPONSE | grep -o '"error":\s*"[^"]*' | cut -d'"' -f4)
+        print_error "Error: ${ERROR_MSG:-No se pudo actualizar}"
+    fi
+}
+
 menu_health() {
-    echo -e "\n${BOLD}=== 4. Estado del Servidor ===${NC}"
+    echo -e "\n${BOLD}=== 6. Estado del Servidor ===${NC}"
     RESPONSE=$(curl -s -X GET "$BASE_URL/health")
     
     STATUS=$(echo $RESPONSE | grep -o '"status":\s*"[^"]*' | cut -d'"' -f4)
@@ -216,17 +305,21 @@ while true; do
     echo "  1) 🔑 Registrarse (Obtener API Key)"
     echo "  2) 🗄️  Conectar mi Base de Datos"
     echo "  3) 📄 Generar Documento / Reporte con IA"
-    echo "  4) 🌐 Revisar Salud del Servidor"
-    echo "  5) ❌ Salir"
+    echo "  4) 🖼️  Subir Archivo (Logo / Plantilla)"
+    echo "  5) ⚙️  Preferencias de IA y Estilo"
+    echo "  6) 🌐 Revisar Salud del Servidor"
+    echo "  7) ❌ Salir"
     echo ""
-    read -p "Elige una opción (1-5): " option < /dev/tty
+    read -p "Elige una opción (1-7): " option < /dev/tty
 
     case $option in
         1) menu_register ;;
         2) menu_connect_db ;;
         3) menu_report ;;
-        4) menu_health ;;
-        5) echo -e "${CYAN}¡Hasta pronto!${NC}"; break ;;
+        4) menu_upload ;;
+        5) menu_preferences ;;
+        6) menu_health ;;
+        7) echo -e "${CYAN}¡Hasta pronto!${NC}"; break ;;
         *) print_error "Opción no válida." ;;
     esac
     pause
