@@ -258,7 +258,7 @@ def try_database_generation(user_id, user_request, report_type, user_files_conte
                     new_path = os.path.join(os.path.dirname(report_path), custom_name)
                     shutil.copy2(report_path, new_path)
                     report_path = new_path
-            return True, report_path
+            return True, report_path, 200
         except Exception as e:
             return False, jsonify({"success": False, "error": f"Error en la base de datos: {str(e)}"}), 500
 
@@ -304,9 +304,9 @@ def generate_docx():
         
         if is_db:
             print(Fore.CYAN + f"[API] Router -> Modo Base de Datos Detectado")
-            success, result = try_database_generation(request.user['id'], user_request, "word", user_files_context, should_download, data)
+            success, result, status_code = try_database_generation(request.user['id'], user_request, "word", user_files_context, should_download, data)
             if not success:
-                return result
+                return result, status_code
             final_path = result
             script_path = "Generado por SQL Agent"
         else:
@@ -417,9 +417,9 @@ def generate_xlsx():
         
         if is_db:
             print(Fore.CYAN + f"[API] Router -> Modo Base de Datos Detectado")
-            success, result = try_database_generation(request.user['id'], user_request, "excel", user_files_context, should_download, data)
+            success, result, status_code = try_database_generation(request.user['id'], user_request, "excel", user_files_context, should_download, data)
             if not success:
-                return result
+                return result, status_code
             final_path = result
             script_path = "Generado por SQL Agent"
         else:
@@ -530,9 +530,9 @@ def generate_pptx():
         
         if is_db:
             print(Fore.CYAN + f"[API] Router -> Modo Base de Datos Detectado")
-            success, result = try_database_generation(request.user['id'], user_request, "powerpoint", user_files_context, should_download, data)
+            success, result, status_code = try_database_generation(request.user['id'], user_request, "powerpoint", user_files_context, should_download, data)
             if not success:
-                return result
+                return result, status_code
             final_path = result
             script_path = "Generado por SQL Agent"
         else:
