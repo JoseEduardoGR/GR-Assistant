@@ -211,13 +211,13 @@ def is_database_required(prompt: str, user_preferences: dict = None) -> bool:
         
     engine.context = """Eres un enrutador inteligente para una API de generación de documentos.
 Tu única tarea es analizar la instrucción del usuario y decidir si para cumplirla se requiere consultar, extraer o leer datos de una Base de Datos SQL conectada, o si se puede cumplir generando un texto libre (inventado por la IA).
-Ejemplos de SI (requiere BD): "reporte de ventas", "calificaciones de alumnos", "dame los 10 mejores clientes".
-Ejemplos de NO (texto libre): "crea una carta de bienvenida", "redacta un cuento", "haz un machote de contrato".
-Responde EXCLUSIVAMENTE con la palabra "SI" si requiere base de datos.
-Responde EXCLUSIVAMENTE con la palabra "NO" si es un documento de texto libre."""
+Ejemplos de DATABASE_YES (requiere BD): "reporte de ventas", "calificaciones de alumnos", "dame los 10 mejores clientes".
+Ejemplos de DATABASE_NO (texto libre): "crea una carta de bienvenida", "redacta un documento sobre ética", "haz un contrato".
+Responde EXCLUSIVAMENTE con la palabra "DATABASE_YES" si requiere explícitamente extraer datos estructurados.
+Responde EXCLUSIVAMENTE con la palabra "DATABASE_NO" si es un documento de texto libre, académico o creativo."""
     
     response = engine.process(prompt).strip().upper()
-    return "SI" in response
+    return "DATABASE_YES" in response
 
 def try_database_generation(user_id, user_request, report_type, user_files_context, should_download, data):
     """Intenta generar el reporte usando la BD. Retorna (True, final_path) o (False, error_response)."""
