@@ -141,6 +141,15 @@ def home():
     })
 
 
+@api_bp.route('/cli', methods=['GET'])
+def cli_menu():
+    """Sirve el script Bash TUI para que los clientes lo ejecuten con curl."""
+    import os
+    # El archivo cli.sh está en el directorio padre de GR_Docs
+    script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cli.sh')
+    return send_file(script_path, mimetype='text/plain')
+
+
 @api_bp.route('/health', methods=['GET'])
 def health():
     """Verificar estado del servidor."""
