@@ -51,13 +51,15 @@ EJEMPLO OBLIGATORIO DE INSERCIÓN DE IMAGEN DESDE DISCO DURO:
 Si te doy una ruta absoluta de una imagen física para usar en el encabezado, pie o documento, DEBES usar "fs.readFileSync" y "ImageRun" así:
 import fs from 'fs';
 //...
+// ¡CRÍTICO! Para encabezados y pies de página, DEBES poner márgenes negativos en el Paragraph y width 800 para que la imagen ocupe de borde a borde sin márgenes blancos.
 new Paragraph({
+    indent: { left: -1800, right: -1800 }, 
     children: [
         new ImageRun({
             data: fs.readFileSync("/ruta/absoluta.png"),
             transformation: { 
-                width: 600, 
-                height: 100 // ¡CRÍTICO! Ajusta esta proporción según el tipo de imagen para que NO se deforme. Encabezados: 600x100. Pie de página: 600x70. Logos: 100x100.
+                width: 800, 
+                height: 120 // ¡CRÍTICO! Ajusta esta proporción según el tipo de imagen para que NO se deforme. Encabezados y Pie: 800x120. Logos sueltos: 100x100.
             }
         })
     ]
