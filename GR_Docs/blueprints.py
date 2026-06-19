@@ -201,6 +201,68 @@ def extract_user_files(user_id):
         
     return extracted_files
 
+def is_database_required(prompt: str, user_preferences: dict = None) -> bool:
+    """Decide de forma inteligente si la petición requiere consultar la base de datos."""
+    from assets.engine import OpenRouterEngine
+    engine = OpenRouterEngine(verbose=False)
+    
+    if user_preferences and 'ai_model' in user_preferences:
+        engine.model = user_preferences['ai_model']
+        
+    engine.context = """Eres un enrutador inteligente para una API de generación de documentos.
+Tu única tarea es analizar la instrucción del usuario y decidir si para cumplirla se requiere consultar, extraer o leer datos de una Base de Datos SQL conectada, o si se puede cumplir generando un texto libre (inventado por la IA).
+Ejemplos de SI (requiere BD): "reporte de ventas", "calificaciones de alumnos", "dame los 10 mejores clientes".
+Ejemplos de NO (texto libre): "crea una carta de bienvenida", "redacta un cuento", "haz un machote de contrato".
+Responde EXCLUSIVAMENTE con la palabra "SI" si requiere base de datos.
+Responde EXCLUSIVAMENTE con la palabra "NO" si es un documento de texto libre."""
+    
+    response = engine.process(prompt).strip().upper()
+    return "SI" in response
+
+def try_database_generation(user_id, user_request, report_type, user_files_context, should_download, data):
+    """Intenta generar el reporte usando la BD. Retorna (True, final_path) o (False, error_response)."""
+    from GR_Docs.security import get_db_connection
+    from GR_DataBase.blueprints import decrypt_credentials
+    from GR_DataBase.queries import DatabaseQueries
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT encrypted_credentials FROM client_databases WHERE user_id = %s", (user_id,))
+    record = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if not record:
+        return False, jsonify({"success": False, "error": "La IA determinó que necesitas extraer datos, pero no se encontraron credenciales de base de datos. Configúralas con /client-db primero."}), 400
+        
+    conn_string = decrypt_credentials(record['encrypted_credentials'])
+    
+    with DatabaseQueries() as db_queries:
+        if not db_queries.connect(conn_string):
+            return False, jsonify({"success": False, "error": "Fallo al conectar a tu base de datos configurada."}), 500
+            
+        try:
+            report_path = db_queries.query_and_report(user_request, report_type, user_files_context)
+            if should_download:
+                import os
+                import shutil
+                custom_name = data.get('filename')
+                if custom_name:
+                    if not custom_name.endswith(f".{report_type[:4]}"): # approximate extension
+                        if report_type == "excel": ext = ".xlsx"
+                        elif report_type == "word": ext = ".docx"
+                        elif report_type == "powerpoint": ext = ".pptx"
+                        else: ext = ""
+                        custom_name += ext
+                    
+                    new_path = os.path.join(os.path.dirname(report_path), custom_name)
+                    shutil.copy2(report_path, new_path)
+                    report_path = new_path
+            return True, report_path
+        except Exception as e:
+            return False, jsonify({"success": False, "error": f"Error en la base de datos: {str(e)}"}), 500
+
+
 @api_bp.route('/docx', methods=['POST'])
 @require_api_key
 def generate_docx():
@@ -234,32 +296,43 @@ def generate_docx():
         user_request = data['request']
         should_download = data.get('download', False)
         
-        print(Fore.CYAN + f"[API] Generando documento Word...")
-        print(Fore.WHITE + f"Solicitud: {user_request[:100]}...")
-        
-        # Obtener generador
-        word_gen = get_word_generator()
+        print(Fore.CYAN + f"[API] Analizando petición Word...")
         user_files_context = extract_user_files(request.user['id'])
         
-        # Generar y ejecutar
-        script_path, docx_path = word_gen.generate_and_execute(
-            user_request, 
-            user_preferences=getattr(request, 'user_preferences', {}),
-            user_files_context=user_files_context
-        )
+        # AGENTIC ROUTER: Decidir si requiere BD
+        is_db = is_database_required(user_request, getattr(request, 'user_preferences', {}))
         
-        # Verificar si hubo error en la generación del script
-        has_error, error_response = check_script_for_errors(script_path)
-        if has_error:
-            print(Fore.RED + f"[API] ✗ Error detectado en el script generado")
-            return error_response
-        
-        # Renombrar si se solicita descarga
-        if should_download:
-            custom_name = data.get('filename')
-            final_path = word_gen.download(docx_path, custom_name)
+        if is_db:
+            print(Fore.CYAN + f"[API] Router -> Modo Base de Datos Detectado")
+            success, result = try_database_generation(request.user['id'], user_request, "word", user_files_context, should_download, data)
+            if not success:
+                return result
+            final_path = result
+            script_path = "Generado por SQL Agent"
         else:
-            final_path = docx_path
+            print(Fore.CYAN + f"[API] Router -> Modo Texto Libre Detectado")
+            # Obtener generador
+            word_gen = get_word_generator()
+            
+            # Generar y ejecutar
+            script_path, docx_path = word_gen.generate_and_execute(
+                user_request, 
+                user_preferences=getattr(request, 'user_preferences', {}),
+                user_files_context=user_files_context
+            )
+            
+            # Verificar si hubo error en la generación del script
+            has_error, error_response = check_script_for_errors(script_path)
+            if has_error:
+                print(Fore.RED + f"[API] ✗ Error detectado en el script generado")
+                return error_response
+            
+            # Renombrar si se solicita descarga
+            if should_download:
+                custom_name = data.get('filename')
+                final_path = word_gen.download(docx_path, custom_name)
+            else:
+                final_path = docx_path
         
         print(Fore.GREEN + f"[API] ✓ Documento generado: {final_path}")
         
@@ -336,32 +409,43 @@ def generate_xlsx():
         user_request = data['request']
         should_download = data.get('download', False)
         
-        print(Fore.CYAN + f"[API] Generando archivo Excel...")
-        print(Fore.WHITE + f"Solicitud: {user_request[:100]}...")
-        
-        # Obtener generador
-        excel_gen = get_excel_generator()
+        print(Fore.CYAN + f"[API] Analizando petición Excel...")
         user_files_context = extract_user_files(request.user['id'])
         
-        # Generar y ejecutar
-        script_path, xlsx_path = excel_gen.generate_and_execute(
-            user_request,
-            user_preferences=getattr(request, 'user_preferences', {}),
-            user_files_context=user_files_context
-        )
+        # AGENTIC ROUTER: Decidir si requiere BD
+        is_db = is_database_required(user_request, getattr(request, 'user_preferences', {}))
         
-        # Verificar si hubo error en la generación del script
-        has_error, error_response = check_script_for_errors(script_path)
-        if has_error:
-            print(Fore.RED + f"[API] ✗ Error detectado en el script generado")
-            return error_response
-        
-        # Renombrar si se solicita descarga
-        if should_download:
-            custom_name = data.get('filename')
-            final_path = excel_gen.download(xlsx_path, custom_name)
+        if is_db:
+            print(Fore.CYAN + f"[API] Router -> Modo Base de Datos Detectado")
+            success, result = try_database_generation(request.user['id'], user_request, "excel", user_files_context, should_download, data)
+            if not success:
+                return result
+            final_path = result
+            script_path = "Generado por SQL Agent"
         else:
-            final_path = xlsx_path
+            print(Fore.CYAN + f"[API] Router -> Modo Texto Libre Detectado")
+            # Obtener generador
+            excel_gen = get_excel_generator()
+            
+            # Generar y ejecutar
+            script_path, xlsx_path = excel_gen.generate_and_execute(
+                user_request,
+                user_preferences=getattr(request, 'user_preferences', {}),
+                user_files_context=user_files_context
+            )
+            
+            # Verificar si hubo error
+            has_error, error_response = check_script_for_errors(script_path)
+            if has_error:
+                print(Fore.RED + f"[API] ✗ Error detectado en el script generado")
+                return error_response
+            
+            # Renombrar si se solicita descarga
+            if should_download:
+                custom_name = data.get('filename')
+                final_path = excel_gen.download(xlsx_path, custom_name)
+            else:
+                final_path = xlsx_path
         
         print(Fore.GREEN + f"[API] ✓ Archivo generado: {final_path}")
         
@@ -438,32 +522,43 @@ def generate_pptx():
         user_request = data['request']
         should_download = data.get('download', False)
         
-        print(Fore.CYAN + f"[API] Generando presentación PowerPoint...")
-        print(Fore.WHITE + f"Solicitud: {user_request[:100]}...")
-        
-        # Obtener generador
-        pptx_gen = get_pptx_generator()
+        print(Fore.CYAN + f"[API] Analizando petición PowerPoint...")
         user_files_context = extract_user_files(request.user['id'])
         
-        # Generar y ejecutar
-        script_path, pptx_path = pptx_gen.generate_and_execute(
-            user_request,
-            user_preferences=getattr(request, 'user_preferences', {}),
-            user_files_context=user_files_context
-        )
+        # AGENTIC ROUTER: Decidir si requiere BD
+        is_db = is_database_required(user_request, getattr(request, 'user_preferences', {}))
         
-        # Verificar si hubo error en la generación del script
-        has_error, error_response = check_script_for_errors(script_path)
-        if has_error:
-            print(Fore.RED + f"[API] ✗ Error detectado en el script generado")
-            return error_response
-        
-        # Renombrar si se solicita descarga
-        if should_download:
-            custom_name = data.get('filename')
-            final_path = pptx_gen.download(pptx_path, custom_name)
+        if is_db:
+            print(Fore.CYAN + f"[API] Router -> Modo Base de Datos Detectado")
+            success, result = try_database_generation(request.user['id'], user_request, "powerpoint", user_files_context, should_download, data)
+            if not success:
+                return result
+            final_path = result
+            script_path = "Generado por SQL Agent"
         else:
-            final_path = pptx_path
+            print(Fore.CYAN + f"[API] Router -> Modo Texto Libre Detectado")
+            # Obtener generador
+            pptx_gen = get_pptx_generator()
+            
+            # Generar y ejecutar
+            script_path, pptx_path = pptx_gen.generate_and_execute(
+                user_request,
+                user_preferences=getattr(request, 'user_preferences', {}),
+                user_files_context=user_files_context
+            )
+            
+            # Verificar si hubo error
+            has_error, error_response = check_script_for_errors(script_path)
+            if has_error:
+                print(Fore.RED + f"[API] ✗ Error detectado en el script generado")
+                return error_response
+                
+            # Renombrar si se solicita descarga
+            if should_download:
+                custom_name = data.get('filename')
+                final_path = pptx_gen.download(pptx_path, custom_name)
+            else:
+                final_path = pptx_path
         
         print(Fore.GREEN + f"[API] ✓ Presentación generada: {final_path}")
         

@@ -135,11 +135,12 @@ menu_connect_db() {
 }
 
 menu_report() {
-    echo -e "\n${BOLD}=== 3. Generar Reporte de Base de Datos ===${NC}"
+    echo -e "\n${BOLD}=== 3. Generar Documento Mágico con IA ===${NC}"
     check_api_key || return
     
-    echo -e "¿Qué reporte necesitas que extraiga la IA de tu base de datos?"
-    echo -e "${CYAN}Ejemplo: 'Todos los alumnos, colores guinda, agrega logos'${NC}"
+    echo -e "\n¿Qué necesitas que haga la IA? (Escribe lo que sea, la IA decidirá si necesita usar tu Base de Datos o inventarlo)"
+    echo -e "${CYAN}Ejemplo 1: 'Crea una carta de bienvenida para la escuela TESCI'${NC}"
+    echo -e "${CYAN}Ejemplo 2: 'Todos los alumnos con sus calificaciones, colores guinda'${NC}"
     read -p "Instrucción: " prompt < /dev/tty
     
     if [ -z "$prompt" ]; then
@@ -147,7 +148,7 @@ menu_report() {
         return
     fi
     
-    echo -e "\n¿Formato del reporte?"
+    echo -e "\n¿Formato del documento?"
     echo "1) Word (.docx)"
     echo "2) Excel (.xlsx)"
     echo "3) PowerPoint (.pptx)"
@@ -163,13 +164,13 @@ menu_report() {
     read -p "Nombre del archivo a guardar (sin extensión): " filename < /dev/tty
     if [ -z "$filename" ]; then filename="Reporte"; fi
     
-    echo -e "\n${YELLOW}Pensando y extrayendo datos (esto puede tomar de 10 a 30 segundos)...${NC}"
+    echo -e "\n${YELLOW}La IA está enrutando tu solicitud, redactando y diseñando (toma de 10 a 30s)...${NC}"
     
-    # Realizar petición
-    HTTP_CODE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/database/report" \
+    # Realizar petición al Endpoint Universal
+    HTTP_CODE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/$ext" \
       -H "Content-Type: application/json" \
       -H "x-api-key: $API_KEY" \
-      -d "{\"request\":\"$prompt\", \"report_type\":\"$format\"}" \
+      -d "{\"request\":\"$prompt\", \"download\":true, \"send_file\":true}" \
       -o "${filename}.${ext}")
       
     if [ "$HTTP_CODE" -eq 200 ]; then
@@ -214,7 +215,7 @@ while true; do
     echo -e "\n${BOLD}Menú Principal:${NC}"
     echo "  1) 🔑 Registrarse (Obtener API Key)"
     echo "  2) 🗄️  Conectar mi Base de Datos"
-    echo "  3) 📄 Generar Reporte con IA"
+    echo "  3) 📄 Generar Documento / Reporte con IA"
     echo "  4) 🌐 Revisar Salud del Servidor"
     echo "  5) ❌ Salir"
     echo ""
