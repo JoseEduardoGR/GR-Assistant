@@ -70,7 +70,7 @@ check_api_key() {
 
 pause() {
     echo ""
-    read -p "Presiona ENTER para continuar..."
+    read -p "Presiona ENTER para continuar..." < /dev/tty
 }
 
 # ==========================================
@@ -79,8 +79,8 @@ pause() {
 
 menu_register() {
     echo -e "\n${BOLD}=== 1. Registro de Usuario ===${NC}"
-    read -p "Tu Email: " email
-    read -p "Tu Nombre/Empresa: " username
+    read -p "Tu Email: " email < /dev/tty
+    read -p "Tu Nombre/Empresa: " username < /dev/tty
     
     if [ -z "$email" ] || [ -z "$username" ]; then
         print_error "El email y nombre no pueden estar vacíos."
@@ -111,7 +111,7 @@ menu_connect_db() {
     
     echo -e "Ingresa tu cadena de conexión (URI) de Postgres / Supabase."
     echo -e "${CYAN}Ejemplo: postgresql://postgres:pass@host:6543/postgres${NC}"
-    read -p "URI: " db_uri
+    read -p "URI: " db_uri < /dev/tty
     
     if [ -z "$db_uri" ]; then
         print_error "La URI no puede estar vacía."
@@ -140,7 +140,7 @@ menu_report() {
     
     echo -e "¿Qué reporte necesitas que extraiga la IA de tu base de datos?"
     echo -e "${CYAN}Ejemplo: 'Todos los alumnos, colores guinda, agrega logos'${NC}"
-    read -p "Instrucción: " prompt
+    read -p "Instrucción: " prompt < /dev/tty
     
     if [ -z "$prompt" ]; then
         print_error "La instrucción no puede estar vacía."
@@ -151,7 +151,7 @@ menu_report() {
     echo "1) Word (.docx)"
     echo "2) Excel (.xlsx)"
     echo "3) PowerPoint (.pptx)"
-    read -p "Elige (1/2/3): " form_op
+    read -p "Elige (1/2/3): " form_op < /dev/tty
     
     case $form_op in
         1) format="word"; ext="docx" ;;
@@ -160,7 +160,7 @@ menu_report() {
         *) print_error "Opción no válida"; return ;;
     esac
     
-    read -p "Nombre del archivo a guardar (sin extensión): " filename
+    read -p "Nombre del archivo a guardar (sin extensión): " filename < /dev/tty
     if [ -z "$filename" ]; then filename="Reporte"; fi
     
     echo -e "\n${YELLOW}Pensando y extrayendo datos (esto puede tomar de 10 a 30 segundos)...${NC}"
@@ -218,7 +218,7 @@ while true; do
     echo "  4) 🌐 Revisar Salud del Servidor"
     echo "  5) ❌ Salir"
     echo ""
-    read -p "Elige una opción (1-5): " option
+    read -p "Elige una opción (1-5): " option < /dev/tty
 
     case $option in
         1) menu_register ;;
