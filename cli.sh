@@ -231,17 +231,19 @@ menu_preferences() {
     read -p "Estilo de Redacción (ej. 'Formal, alegre'): " prompt_style < /dev/tty
     
     echo -e "\nModelos disponibles:"
-    echo "1) qwen/qwen-2.5-72b-instruct:free (Recomendado)"
-    echo "2) meta-llama/llama-3.3-70b-instruct:free"
-    echo "3) google/gemini-2.0-flash-exp:free"
-    echo "4) No cambiar modelo"
-    read -p "Elige (1-4): " model_op < /dev/tty
+    echo "1) nex-agi/nex-n2-pro:free (Recomendado)"
+    echo "2) qwen/qwen-2.5-72b-instruct:free"
+    echo "3) meta-llama/llama-3.3-70b-instruct:free"
+    echo "4) google/gemini-2.0-flash-exp:free"
+    echo "5) No cambiar modelo"
+    read -p "Elige (1-5): " model_op < /dev/tty
     
     ai_model=""
     case $model_op in
-        1) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
-        2) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
-        3) ai_model="google/gemini-2.0-flash-exp:free" ;;
+        1) ai_model="nex-agi/nex-n2-pro:free" ;;
+        2) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
+        3) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
+        4) ai_model="google/gemini-2.0-flash-exp:free" ;;
     esac
     
     # Construir JSON
