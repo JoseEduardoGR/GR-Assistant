@@ -180,6 +180,7 @@ Genera SOLO el código completo, sin explicaciones adicionales.
 
     def generate_and_execute(self, user_request: str, user_preferences: dict = None, user_files_context: list = None) -> tuple[str, str]:
         """Genera y ejecuta con auto-corrección de hasta 5 intentos."""
+        self.engine.clear_history()
         max_attempts = 5
         previous_error = None
         previous_code = None

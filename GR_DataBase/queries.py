@@ -81,6 +81,7 @@ class DatabaseQueries:
         Returns:
             Consulta SQL generada
         """
+        self.engine.clear_history()
         base_prompt = self._load_prompt()
         
         # Si no hay schema_info, intentar obtenerla
