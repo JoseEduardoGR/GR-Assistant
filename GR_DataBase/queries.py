@@ -70,7 +70,7 @@ class DatabaseQueries:
         """Desconecta de la base de datos."""
         self.db.disconnect()
     
-    def generate_query(self, user_request: str, schema_info: str = None) -> str:
+    def generate_query(self, user_request: str, schema_info: str = None, user_preferences: dict = None) -> str:
         """
         Genera una consulta SQL basada en la solicitud del usuario usando IA.
         
@@ -99,7 +99,9 @@ Solicitud del usuario:
 Genera SOLO la consulta SQL, sin explicaciones adicionales ni formato markdown.
 La consulta debe ser compatible con SQL Server."""
         
-        query = self.engine.process(full_prompt).strip()
+        ai_model = user_preferences.get('ai_model') if user_preferences else None
+        override_key = user_preferences.get('openrouter_key') if user_preferences else None
+        query = self.engine.process(full_prompt, override_model=ai_model, override_api_key=override_key).strip()
         
         # Limpiar la consulta (remover markdown si existe)
         query = self._clean_query(query)
@@ -164,7 +166,7 @@ La consulta debe ser compatible con SQL Server."""
         
         return df
     
-    def query_and_report(self, user_request: str, report_type: str = "excel", user_files_context: list = None) -> str:
+    def query_and_report(self, user_request: str, report_type: str = "excel", user_files_context: list = None, user_preferences: dict = None) -> str:
         """
         Genera una consulta (con hasta 5 intentos si falla), la ejecuta y crea un reporte.
         """
@@ -184,7 +186,7 @@ La consulta debe ser compatible con SQL Server."""
             if error_history:
                 prompt_context += f"\n\nERROR ANTERIOR:\nLa base de datos devolvió este error al ejecutar tu consulta anterior:\n{error_history}\nPor favor, corrige tu consulta SQL basándote estrictamente en el esquema proporcionado y devuélvela reparada."
                 
-            query = self.generate_query(prompt_context, schema_info)
+            query = self.generate_query(prompt_context, schema_info, user_preferences)
             
             try:
                 print(f"[DatabaseQueries] Ejecutando: {query}")
@@ -210,15 +212,15 @@ La consulta debe ser compatible con SQL Server."""
         
         # Generar reporte según el tipo
         if report_type.lower() == "excel":
-            return self._generate_excel_report(df, user_request, user_files_context)
+            return self._generate_excel_report(df, user_request, user_files_context, user_preferences)
         elif report_type.lower() == "word":
-            return self._generate_word_report(df, user_request, user_files_context)
+            return self._generate_word_report(df, user_request, user_files_context, user_preferences)
         elif report_type.lower() == "powerpoint":
-            return self._generate_powerpoint_report(df, user_request, user_files_context)
+            return self._generate_powerpoint_report(df, user_request, user_files_context, user_preferences)
         else:
             raise ValueError(f"Tipo de reporte no soportado: {report_type}")
     
-    def _generate_excel_report(self, df: pd.DataFrame, description: str, user_files_context: list = None) -> str:
+    def _generate_excel_report(self, df: pd.DataFrame, description: str, user_files_context: list = None, user_preferences: dict = None) -> str:
         """Genera un reporte Excel usando el módulo xlsx."""
         from GR_Docs.xlsx.excel import ExcelScriptGenerator
         
@@ -291,14 +293,14 @@ for column in ws.columns:
 wb.save('ruta_del_archivo.xlsx')
 ```"""
         
-        script_path, xlsx_path = excel_gen.generate_and_execute(prompt, user_files_context=user_files_context)
+        script_path, xlsx_path = excel_gen.generate_and_execute(prompt, user_preferences=user_preferences, user_files_context=user_files_context)
         
         if self.verbose:
             print(f"[DatabaseQueries] Reporte Excel generado: {xlsx_path}")
         
         return xlsx_path
     
-    def _generate_word_report(self, df: pd.DataFrame, description: str, user_files_context: list = None) -> str:
+    def _generate_word_report(self, df: pd.DataFrame, description: str, user_files_context: list = None, user_preferences: dict = None) -> str:
         """Genera un reporte Word usando el módulo doc."""
         from GR_Docs.doc.word import WordScriptGenerator
         
@@ -323,14 +325,14 @@ Datos a incluir:
 
 Asegúrate de presentar los datos de forma atractiva y respetando el diseño solicitado."""
         
-        script_path, docx_path = word_gen.generate_and_execute(prompt, user_files_context=user_files_context)
+        script_path, docx_path = word_gen.generate_and_execute(prompt, user_preferences=user_preferences, user_files_context=user_files_context)
         
         if self.verbose:
             print(f"[DatabaseQueries] Reporte Word generado: {docx_path}")
         
         return docx_path
     
-    def _generate_powerpoint_report(self, df: pd.DataFrame, description: str, user_files_context: list = None) -> str:
+    def _generate_powerpoint_report(self, df: pd.DataFrame, description: str, user_files_context: list = None, user_preferences: dict = None) -> str:
         """Genera un reporte PowerPoint usando el módulo pptx."""
         from GR_Docs.pptx.powerpoint import PowerPointScriptGenerator
         
@@ -352,7 +354,7 @@ Datos a mostrar (primeras 10 filas):
 
 Asegúrate de que la presentación sea muy atractiva y cumpla todas las reglas de diseño solicitadas por el usuario."""
         
-        script_path, pptx_path = pptx_gen.generate_and_execute(prompt, user_files_context=user_files_context)
+        script_path, pptx_path = pptx_gen.generate_and_execute(prompt, user_preferences=user_preferences, user_files_context=user_files_context)
         
         if self.verbose:
             print(f"[DatabaseQueries] Reporte PowerPoint generado: {pptx_path}")

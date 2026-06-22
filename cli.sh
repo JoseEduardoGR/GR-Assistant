@@ -243,14 +243,19 @@ menu_preferences() {
     echo -e "Configura tu entorno. Deja en blanco los campos que no quieras cambiar."
     read -p "Nombre / Info de tu Empresa: " company_info < /dev/tty
     read -p "Estilo de Redacción (ej. 'Formal, alegre'): " prompt_style < /dev/tty
+    echo -e "\n${CYAN}Si tienes tu propia API Key de OpenRouter, ingrésala aquí para usar modelos premium.${NC}"
+    echo -e "Déjalo en blanco para usar la gratuita del servidor."
+    read -p "OpenRouter API Key (Opcional): " openrouter_key < /dev/tty
     
     echo -e "\nModelos disponibles:"
     echo "1) nex-agi/nex-n2-pro:free (Recomendado)"
     echo "2) cohere/north-mini-code:free"
     echo "3) meta-llama/llama-3.3-70b-instruct:free"
     echo "4) google/gemini-2.0-flash-exp:free"
-    echo "5) No cambiar modelo"
-    read -p "Elige (1-5): " model_op < /dev/tty
+    echo "5) anthropic/claude-3-haiku (Requiere API Key propia)"
+    echo "6) anthropic/claude-3.5-haiku (Requiere API Key propia)"
+    echo "7) No cambiar modelo"
+    read -p "Elige (1-7): " model_op < /dev/tty
     
     ai_model=""
     case $model_op in
@@ -258,17 +263,20 @@ menu_preferences() {
         2) ai_model="cohere/north-mini-code:free" ;;
         3) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
         4) ai_model="google/gemini-2.0-flash-exp:free" ;;
+        5) ai_model="anthropic/claude-3-haiku" ;;
+        6) ai_model="anthropic/claude-3.5-haiku" ;;
     esac
     
-    # Construir JSON
-    JSON_DATA="{"
-    [ -n "$company_info" ] && JSON_DATA+="\"company_info\": \"$company_info\","
-    [ -n "$prompt_style" ] && JSON_DATA+="\"prompt_style\": \"$prompt_style\","
-    [ -n "$ai_model" ] && JSON_DATA+="\"ai_model\": \"$ai_model\","
-    JSON_DATA=${JSON_DATA%,} # Remove last comma
-    JSON_DATA+="}"
+    # Construir el JSON manualmente para evitar jq (no siempre instalado)
+    json="{"
+    [ -n "$company_info" ] && json="$json\"company_info\":\"$company_info\","
+    [ -n "$prompt_style" ] && json="$json\"prompt_style\":\"$prompt_style\","
+    [ -n "$ai_model" ] && json="$json\"ai_model\":\"$ai_model\","
+    [ -n "$openrouter_key" ] && json="$json\"openrouter_key\":\"$openrouter_key\","
+    json="${json%,}" # Quitar última coma
+    json="$json}"
     
-    if [ "$JSON_DATA" == "}" ]; then
+    if [ "$json" = "{}" ]; then
         print_info "No se hicieron cambios."
         return
     fi
@@ -277,7 +285,7 @@ menu_preferences() {
     RESPONSE=$(curl -s -X POST "$BASE_URL/preferences" \
       -H "Content-Type: application/json" \
       -H "x-api-key: $API_KEY" \
-      -d "$JSON_DATA")
+      -d "$json")
       
     SUCCESS=$(echo $RESPONSE | grep -o '"success":\s*true')
     if [ -n "$SUCCESS" ]; then

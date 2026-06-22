@@ -13,6 +13,21 @@ from .security import require_api_key, get_db_connection, encrypt_credentials, r
 with open("settings.yaml") as f:
     settings = yaml.safe_load(f)
 
+def ensure_db_schema():
+    from .security import get_db_connection
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS openrouter_key VARCHAR(255);")
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("[DB] Schema migration check passed.")
+    except Exception as e:
+        print(f"[DB] Migration check failed: {e}")
+
+ensure_db_schema()
+
 # Crear blueprints
 api_bp = Blueprint('api', __name__)
 
@@ -252,7 +267,7 @@ def try_database_generation(user_id, user_request, report_type, user_files_conte
             return False, jsonify({"success": False, "error": "Fallo al conectar a tu base de datos configurada."}), 500
             
         try:
-            report_path = db_queries.query_and_report(user_request, report_type, user_files_context)
+            report_path = db_queries.query_and_report(user_request, report_type, user_files_context, user_preferences=getattr(request, 'user_preferences', {}))
             if should_download:
                 import os
                 import shutil
@@ -683,6 +698,7 @@ def manage_preferences():
         company_info = data.get('company_info', request.user_preferences.get('company_info', ''))
         database_schema = data.get('database_schema', request.user_preferences.get('database_schema', ''))
         logo_path = data.get('logo_path', request.user_preferences.get('logo_path', ''))
+        openrouter_key = data.get('openrouter_key', request.user_preferences.get('openrouter_key', ''))
         
         ALLOWED_MODELS = [
             "meta-llama/llama-3.3-70b-instruct:free",
@@ -691,7 +707,9 @@ def manage_preferences():
             "deepseek/deepseek-chat:free",
             "mistralai/mistral-nemo:free",
             "nex-agi/nex-n2-pro:free",
-            "cohere/north-mini-code:free"
+            "cohere/north-mini-code:free",
+            "anthropic/claude-3-haiku",
+            "anthropic/claude-3.5-haiku"
         ]
         
         if ai_model and ai_model not in ALLOWED_MODELS:
@@ -702,16 +720,17 @@ def manage_preferences():
             theme_colors = json.dumps(theme_colors)
             
         cur.execute("""
-            INSERT INTO user_preferences (user_id, prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO user_preferences (user_id, prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path, openrouter_key) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (user_id) DO UPDATE 
             SET prompt_style = EXCLUDED.prompt_style, 
                 theme_colors = EXCLUDED.theme_colors, 
                 ai_model = EXCLUDED.ai_model,
                 company_info = EXCLUDED.company_info,
                 database_schema = EXCLUDED.database_schema,
-                logo_path = EXCLUDED.logo_path
-        """, (user_id, prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path))
+                logo_path = EXCLUDED.logo_path,
+                openrouter_key = EXCLUDED.openrouter_key
+        """, (user_id, prompt_style, theme_colors, ai_model, company_info, database_schema, logo_path, openrouter_key))
         
         conn.commit()
         cur.close()

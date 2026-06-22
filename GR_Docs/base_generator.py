@@ -133,7 +133,8 @@ Genera SOLO el código completo, sin explicaciones adicionales.
 {log_instruction}"""
             
         ai_model = user_preferences.get('ai_model') if user_preferences else None
-        script_content = self.engine.process(full_prompt, override_model=ai_model)
+        override_key = user_preferences.get('openrouter_key') if user_preferences else None
+        script_content = self.engine.process(full_prompt, override_model=ai_model, override_api_key=override_key)
         script_content = self._clean_script(script_content)
         
         script_id = str(uuid.uuid4())
@@ -221,9 +222,9 @@ Requerimiento del usuario: {user_request}
 Analiza brevemente por qué falla y propón una solución clara para que el usuario la intente (ej. faltan dependencias, el usuario debe pedir algo distinto, etc). No generes más código."""
         
         ai_model = user_preferences.get('ai_model') if user_preferences else None
-        ai_solution = self.engine.process(solution_prompt, override_model=ai_model)
-        
-        raise RuntimeError(f"Error tras 5 intentos. Detalle del último error:\n{previous_error}\n\nSolución propuesta por la IA:\n{ai_solution}")
+        override_key = user_preferences.get('openrouter_key') if user_preferences else None
+        ai_solution = self.engine.process(solution_prompt, override_model=ai_model, override_api_key=override_key)
+        return "", f"Error tras 5 intentos. Detalle del último error:\n{previous_error}\n\nSolución propuesta por la IA:\n{ai_solution}"
 
     def download(self, doc_path: str, custom_name: str = None) -> str:
         doc_file = Path(doc_path)

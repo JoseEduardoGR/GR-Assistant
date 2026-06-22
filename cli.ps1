@@ -227,14 +227,19 @@ function Menu-Preferences {
     Write-Host "Configura tu entorno. Deja en blanco los campos que no quieras cambiar."
     $company_info = Read-Host "Nombre / Info de tu Empresa"
     $prompt_style = Read-Host "Estilo de Redacción (ej. 'Formal, alegre')"
+    Write-Host "`nSi tienes tu propia API Key de OpenRouter, ingrésala aquí para usar modelos premium." -ForegroundColor Cyan
+    Write-Host "Déjalo en blanco para usar la gratuita del servidor."
+    $openrouter_key = Read-Host "OpenRouter API Key (Opcional)"
     
     Write-Host "`nModelos disponibles:"
     Write-Host "1) nex-agi/nex-n2-pro:free (Recomendado)"
     Write-Host "2) cohere/north-mini-code:free"
     Write-Host "3) meta-llama/llama-3.3-70b-instruct:free"
     Write-Host "4) google/gemini-2.0-flash-exp:free"
-    Write-Host "5) No cambiar modelo"
-    $model_op = Read-Host "Elige (1-5)"
+    Write-Host "5) anthropic/claude-3-haiku (Requiere API Key propia)"
+    Write-Host "6) anthropic/claude-3.5-haiku (Requiere API Key propia)"
+    Write-Host "7) No cambiar modelo"
+    $model_op = Read-Host "Elige (1-7)"
     
     $ai_model = ""
     switch ($model_op) {
@@ -242,12 +247,15 @@ function Menu-Preferences {
         "2" { $ai_model = "cohere/north-mini-code:free" }
         "3" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
         "4" { $ai_model = "google/gemini-2.0-flash-exp:free" }
+        "5" { $ai_model = "anthropic/claude-3-haiku" }
+        "6" { $ai_model = "anthropic/claude-3.5-haiku" }
     }
     
     $prefObj = @{}
     if (-not [string]::IsNullOrWhiteSpace($company_info)) { $prefObj.Add("company_info", $company_info) }
     if (-not [string]::IsNullOrWhiteSpace($prompt_style)) { $prefObj.Add("prompt_style", $prompt_style) }
     if (-not [string]::IsNullOrWhiteSpace($ai_model)) { $prefObj.Add("ai_model", $ai_model) }
+    if (-not [string]::IsNullOrWhiteSpace($openrouter_key)) { $prefObj.Add("openrouter_key", $openrouter_key) }
     
     if ($prefObj.Count -eq 0) {
         Print-Info "No se hicieron cambios."

@@ -232,7 +232,7 @@ def generate_report():
             if not db_queries.connect(conn_string):
                 return jsonify({"status": "error", "message": "Fallo al conectar a la base de datos del cliente."}), 500
                 
-            report_path = db_queries.query_and_report(user_request, report_type, user_files_context)
+            report_path = db_queries.query_and_report(user_request, report_type, user_files_context, user_preferences=getattr(request, 'user_preferences', {}))
         
         return send_file(
             report_path,
