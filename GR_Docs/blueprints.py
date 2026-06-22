@@ -690,7 +690,8 @@ def manage_preferences():
             "qwen/qwen-2.5-72b-instruct:free",
             "deepseek/deepseek-chat:free",
             "mistralai/mistral-nemo:free",
-            "nex-agi/nex-n2-pro:free"
+            "nex-agi/nex-n2-pro:free",
+            "cohere/north-mini-code:free"
         ]
         
         if ai_model and ai_model not in ALLOWED_MODELS:

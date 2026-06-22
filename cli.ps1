@@ -16,9 +16,9 @@ function Print-Logo {
     Write-Host ""
 }
 
-function Print-Success($msg) { Write-Host "✔ $msg" -ForegroundColor Green }
-function Print-Error($msg) { Write-Host "✖ $msg" -ForegroundColor Red }
-function Print-Info($msg) { Write-Host "ℹ $msg" -ForegroundColor Yellow }
+function Print-Success($msg) { Write-Host "[OK] $msg" -ForegroundColor Green }
+function Print-Error($msg) { Write-Host "[ERR] $msg" -ForegroundColor Red }
+function Print-Info($msg) { Write-Host "[INFO] $msg" -ForegroundColor Yellow }
 
 function Save-Config($key) {
     "API_KEY=$key" | Out-File -FilePath $CONFIG_FILE -Encoding UTF8
@@ -214,7 +214,7 @@ function Menu-Preferences {
     
     Write-Host "`nModelos disponibles:"
     Write-Host "1) nex-agi/nex-n2-pro:free (Recomendado)"
-    Write-Host "2) qwen/qwen-2.5-72b-instruct:free"
+    Write-Host "2) cohere/north-mini-code:free"
     Write-Host "3) meta-llama/llama-3.3-70b-instruct:free"
     Write-Host "4) google/gemini-2.0-flash-exp:free"
     Write-Host "5) No cambiar modelo"
@@ -223,7 +223,7 @@ function Menu-Preferences {
     $ai_model = ""
     switch ($model_op) {
         "1" { $ai_model = "nex-agi/nex-n2-pro:free" }
-        "2" { $ai_model = "qwen/qwen-2.5-72b-instruct:free" }
+        "2" { $ai_model = "cohere/north-mini-code:free" }
         "3" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
         "4" { $ai_model = "google/gemini-2.0-flash-exp:free" }
     }
@@ -275,22 +275,22 @@ while ($true) {
     $apiKey = Load-Config
     
     if (-not [string]::IsNullOrEmpty($apiKey)) {
-        Write-Host -NoNewline "👤 Estado: "
+        Write-Host -NoNewline "[User] Estado: "
         Write-Host -NoNewline "Conectado" -ForegroundColor Green
         Write-Host " (API Key detectada)"
     } else {
-        Write-Host -NoNewline "👤 Estado: "
+        Write-Host -NoNewline "[User] Estado: "
         Write-Host "No Registrado" -ForegroundColor Red
     }
     
     Write-Host "`nMenú Principal:" -ForegroundColor White
-    Write-Host "  1) 🔑 Registrarse (Obtener API Key)"
-    Write-Host "  2) 🗄️  Conectar mi Base de Datos"
-    Write-Host "  3) 📄 Generar Documento / Reporte con IA"
-    Write-Host "  4) 🖼️  Subir Archivo (Logo / Plantilla)"
-    Write-Host "  5) ⚙️  Preferencias de IA y Estilo"
-    Write-Host "  6) 🌐 Revisar Salud del Servidor"
-    Write-Host "  7) ❌ Salir`n"
+    Write-Host "  1) [KEY] Registrarse (Obtener API Key)"
+    Write-Host "  2) [DB]  Conectar mi Base de Datos"
+    Write-Host "  3) [DOC] Generar Documento / Reporte con IA"
+    Write-Host "  4) [IMG] Subir Archivo (Logo / Plantilla)"
+    Write-Host "  5) [CFG] Preferencias de IA y Estilo"
+    Write-Host "  6) [WEB] Revisar Salud del Servidor"
+    Write-Host "  7) [X]   Salir`n"
     
     $option = Read-Host "Elige una opción (1-7)"
     
