@@ -77,18 +77,13 @@ class BaseDocumentGenerator:
     def _clean_script(self, content: str) -> str:
         if not content:
             return ""
-        lines = content.split('\n')
-        cleaned_lines = []
-        in_code_block = False
-        
-        for line in lines:
-            if line.strip().startswith('```'):
-                in_code_block = not in_code_block
-                continue
-            if in_code_block or not line.strip().startswith('```'):
-                cleaned_lines.append(line)
-        
-        return '\n'.join(cleaned_lines)
+            
+        import re
+        matches = re.findall(r'```(?:javascript|js|json|sql|python)?\s*(.*?)```', content, re.DOTALL | re.IGNORECASE)
+        if matches:
+            return '\n'.join(matches).strip()
+            
+        return content.strip()
 
     def generate_script(self, user_request: str, previous_error: str = None, previous_code: str = None, user_preferences: dict = None, user_files_context: list = None) -> tuple[str, str]:
         base_prompt = self._load_prompt(user_preferences, user_files_context)
@@ -98,12 +93,14 @@ class BaseDocumentGenerator:
         output_path = self.output_dir / output_filename
         
         if previous_error and previous_code:
+            # Añadir números de línea al código anterior para que la IA pueda ubicar los SyntaxError
+            numbered_code = "\n".join([f"{i+1}: {line}" for i, line in enumerate(previous_code.split('\n'))])
             full_prompt = f"""{base_prompt}
             
 El código generado anteriormente falló. 
-Código que falló:
+Código anterior (con números de línea para referencia):
 ```
-{previous_code}
+{numbered_code}
 ```
 
 Error obtenido:
@@ -179,6 +176,28 @@ Genera SOLO el código completo, sin explicaciones adicionales.
         except FileNotFoundError as e:
             return False, f"{self.runtime} no está instalado o no está en el PATH", str(e)
 
+    def _evaluate_ai_solution(self, previous_error: str, previous_code: str, user_request: str, user_preferences: dict = None) -> str:
+        """Pide a la IA que analice por qué falló el código repetidamente."""
+        self.engine.clear_history()
+        
+        numbered_code = "\n".join([f"{i+1}: {line}" for i, line in enumerate(previous_code.split('\n'))])
+        solution_prompt = f"""El siguiente código JavaScript falló al ejecutarse.
+Error:
+{previous_error}
+
+Código con números de línea:
+```javascript
+{numbered_code}
+```
+
+Requerimiento del usuario: {user_request}
+
+Analiza brevemente por qué falla y propón una solución clara para que el usuario la intente (ej. faltan dependencias, el usuario debe pedir algo distinto, etc). No generes más código."""
+        
+        ai_model = user_preferences.get('ai_model') if user_preferences else None
+        override_key = user_preferences.get('openrouter_key') if user_preferences else None
+        return self.engine.process(solution_prompt, override_model=ai_model, override_api_key=override_key)
+
     def generate_and_execute(self, user_request: str, user_preferences: dict = None, user_files_context: list = None) -> tuple[str, str]:
         """Genera y ejecuta con auto-corrección de hasta 5 intentos."""
         self.engine.clear_history()
@@ -212,18 +231,7 @@ Genera SOLO el código completo, sin explicaciones adicionales.
                 previous_code = script_content
                 
         # Si llega aquí, falló 5 veces. Pedir solución propuesta a la IA
-        solution_prompt = f"""El siguiente código ha fallado persistentemente después de 5 intentos.
-Código:
-{previous_code}
-Error:
-{previous_error}
-Requerimiento del usuario: {user_request}
-
-Analiza brevemente por qué falla y propón una solución clara para que el usuario la intente (ej. faltan dependencias, el usuario debe pedir algo distinto, etc). No generes más código."""
-        
-        ai_model = user_preferences.get('ai_model') if user_preferences else None
-        override_key = user_preferences.get('openrouter_key') if user_preferences else None
-        ai_solution = self.engine.process(solution_prompt, override_model=ai_model, override_api_key=override_key)
+        ai_solution = self._evaluate_ai_solution(previous_error, previous_code, user_request, user_preferences)
         return "", f"Error tras 5 intentos. Detalle del último error:\n{previous_error}\n\nSolución propuesta por la IA:\n{ai_solution}"
 
     def download(self, doc_path: str, custom_name: str = None) -> str:

@@ -115,21 +115,14 @@ La consulta debe ser compatible con SQL Server."""
     
     def _clean_query(self, query: str) -> str:
         """Limpia la consulta removiendo markdown y texto extra."""
-        # Remover bloques de código markdown
-        if '```' in query:
-            lines = query.split('\n')
-            cleaned_lines = []
-            in_code_block = False
+        if not query:
+            return ""
             
-            for line in lines:
-                if line.strip().startswith('```'):
-                    in_code_block = not in_code_block
-                    continue
-                if in_code_block or not line.strip().startswith('```'):
-                    cleaned_lines.append(line)
+        import re
+        matches = re.findall(r'```(?:sql)?\s*(.*?)```', query, re.DOTALL | re.IGNORECASE)
+        if matches:
+            return '\n'.join(matches).strip()
             
-            query = '\n'.join(cleaned_lines)
-        
         return query.strip()
     
     def _get_schema_info(self) -> str:
