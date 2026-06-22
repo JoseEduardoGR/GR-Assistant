@@ -141,24 +141,40 @@ function Menu-Report {
     $filename = Read-Host "Nombre del archivo a guardar (sin extensión)"
     if ([string]::IsNullOrWhiteSpace($filename)) { $filename = "Reporte" }
     
-    Write-Host "`nLa IA está enrutando tu solicitud, redactando y diseñando (toma de 10 a 30s)..." -ForegroundColor Yellow
+    Write-Host "`nLa IA está enrutando tu solicitud, redactando y diseñando..." -ForegroundColor Yellow
     
     $body = @{ request = $prompt; download = $true; send_file = $true } | ConvertTo-Json
     $headers = @{ "x-api-key" = $apiKey }
     $outFile = "$PWD\$filename.$ext"
     
-    try {
-        Invoke-RestMethod -Uri "$BASE_URL/$ext" -Method Post -Headers $headers -Body $body -ContentType "application/json" -OutFile $outFile
+    $job = Start-Job -ScriptBlock {
+        param($baseUrl, $ext, $headers, $body, $outFile)
+        try {
+            Invoke-RestMethod -Uri "$baseUrl/$ext" -Method Post -Headers $headers -Body $body -ContentType "application/json" -OutFile $outFile
+            return @{ success = $true }
+        } catch {
+            return @{ success = $false; error = $_.Exception.Message }
+        }
+    } -ArgumentList $BASE_URL, $ext, $headers, $body, $outFile
+    
+    $spinner = @("|", "/", "-", "\")
+    $i = 0
+    while ($job.State -eq "Running") {
+        Write-Host -NoNewline "`r[$($spinner[$i])] Generando documento... (toma de 10 a 30s)" -ForegroundColor Yellow
+        $i = ($i + 1) % 4
+        Start-Sleep -Milliseconds 150
+    }
+    Write-Host "`r                                                                 `r" -NoNewline
+    
+    $result = Receive-Job -Job $job
+    Remove-Job -Job $job
+    
+    if ($result.success) {
         Print-Success "¡Documento Generado con Éxito!"
         Write-Host "Archivo guardado como: $filename.$ext en la carpeta actual."
-    } catch {
+    } else {
         Print-Error "Ocurrió un error."
-        try {
-            $errBody = $_.ErrorDetails.Message | ConvertFrom-Json
-            Write-Host $errBody.error -ForegroundColor Red
-        } catch {
-            Write-Host $_.Exception.Message -ForegroundColor Red
-        }
+        Write-Host $result.error -ForegroundColor Red
     }
 }
 

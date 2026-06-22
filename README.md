@@ -245,6 +245,26 @@ python list_models.py
 
 ---
 
+## 💻 Interfaz de Línea de Comandos (TUI)
+
+GR Assistant cuenta con un cliente interactivo para que no tengas que crear peticiones manualmente.
+
+### Para usuarios de Mac y Linux (Terminal):
+Abre tu terminal y ejecuta:
+```bash
+curl -s http://160.34.211.247:8000/cli | bash
+```
+
+### Para usuarios de Windows (PowerShell):
+Abre **PowerShell** y ejecuta:
+```powershell
+irm http://160.34.211.247:8000/cli.ps1 | iex
+```
+
+Verás un menú interactivo con colores y opciones fáciles de usar.
+
+---
+
 ## 🚀 Cómo Usar la API de GR Assistant
 
 ### 🌐 Iniciar el Servidor
@@ -323,20 +343,6 @@ curl -X POST http://localhost:8000/files \
   -F "semantic_name=logo_oficial.png" \
   -F "description=Logo corporativo principal"
 ```
-
-### Para usuarios de Mac y Linux (Terminal):
-```bash
-curl -s http://160.34.211.247:8000/cli | bash
-```
-
-### Para usuarios de Windows (PowerShell):
-Abre **PowerShell** y ejecuta:
-```powershell
-irm http://160.34.211.247:8000/cli.ps1 | iex
-```
-
-### El menú interactivo
-Verás un menú interactivo en tu terminal:
 
 ### 4️⃣ Generar Reportes Inteligentes desde la Base de Datos
 

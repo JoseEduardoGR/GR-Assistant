@@ -164,14 +164,28 @@ menu_report() {
     read -p "Nombre del archivo a guardar (sin extensión): " filename < /dev/tty
     if [ -z "$filename" ]; then filename="Reporte"; fi
     
-    echo -e "\n${YELLOW}La IA está enrutando tu solicitud, redactando y diseñando (toma de 10 a 30s)...${NC}"
+    echo -e "\n${YELLOW}La IA está enrutando tu solicitud, redactando y diseñando...${NC}"
     
-    # Realizar petición al Endpoint Universal
-    HTTP_CODE=$(curl -s -w "%{http_code}" -X POST "$BASE_URL/$ext" \
+    # Realizar petición al Endpoint Universal en segundo plano para mostrar spinner
+    curl -s -w "%{http_code}" -X POST "$BASE_URL/$ext" \
       -H "Content-Type: application/json" \
       -H "x-api-key: $API_KEY" \
       -d "{\"request\":\"$prompt\", \"download\":true, \"send_file\":true}" \
-      -o "${filename}.${ext}")
+      -o "${filename}.${ext}" > "/tmp/gr_http_code_$$" &
+      
+    CURL_PID=$!
+    spinner=( "⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏" )
+    i=0
+    while kill -0 $CURL_PID 2>/dev/null; do
+        i=$(( (i+1) % 10 ))
+        printf "\r${YELLOW}${spinner[$i]} Generando documento... (toma de 10 a 30s)${NC}"
+        sleep 0.1
+    done
+    wait $CURL_PID
+    
+    HTTP_CODE=$(cat "/tmp/gr_http_code_$$" 2>/dev/null)
+    rm -f "/tmp/gr_http_code_$$"
+    printf "\r\033[K" # Limpiar la línea del spinner
       
     if [ "$HTTP_CODE" -eq 200 ]; then
         print_success "¡Documento Generado con Éxito!"
