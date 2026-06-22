@@ -32,6 +32,7 @@ SOLO puedes importar estos elementos de "docx":
 - UnderlineType
 
 NO USES: TableBorder, TableBorderStyle, ThemeColor, ni ningún export que no esté en la lista anterior.
+¡CRÍTICO!: NUNCA uses `new PageNumber()`. En docx v9 `PageNumber` no es una clase instanciable. Si necesitas numerar páginas, úsalo como valor dentro de un TextRun: `new TextRun({ children: ["Página ", PageNumber.CURRENT, " de ", PageNumber.TOTAL_PAGES] })`.
 
 Para bordes de tabla usa: borders: { top: { color: "...", size: 4, val: BorderStyle.SINGLE }, ... }
 
