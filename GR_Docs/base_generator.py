@@ -197,6 +197,9 @@ Genera SOLO el código completo, sin explicaciones adicionales.
                 user_files_context=user_files_context
             )
             
+            if script_content.startswith("[Error"):
+                return "", script_content
+                
             success, result_path_or_error, stderr = self.execute_script(script_path)
             
             if success:
