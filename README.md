@@ -324,6 +324,20 @@ curl -X POST http://localhost:8000/files \
   -F "description=Logo corporativo principal"
 ```
 
+### Para usuarios de Mac y Linux (Terminal):
+```bash
+curl -s http://160.34.211.247:8000/cli | bash
+```
+
+### Para usuarios de Windows (PowerShell):
+Abre **PowerShell** y ejecuta:
+```powershell
+irm http://160.34.211.247:8000/cli.ps1 | iex
+```
+
+### El menú interactivo
+Verás un menú interactivo en tu terminal:
+
 ### 4️⃣ Generar Reportes Inteligentes desde la Base de Datos
 
 ¡Pide tu reporte! La IA extraerá los datos, aplicará el diseño que pidas e incrustará tus logos.

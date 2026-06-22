@@ -142,11 +142,20 @@ def home():
 
 
 @api_bp.route('/cli', methods=['GET'])
+@api_bp.route('/cli.ps1', methods=['GET'])
 def cli_menu():
-    """Sirve el script Bash TUI para que los clientes lo ejecuten con curl."""
+    """Sirve el script Bash o PowerShell TUI para que los clientes lo ejecuten."""
     import os
-    # El archivo cli.sh está en el directorio padre de GR_Docs
-    script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cli.sh')
+    if request.path.endswith('.ps1'):
+        script_name = 'cli.ps1'
+    else:
+        user_agent = request.headers.get('User-Agent', '').lower()
+        if 'windows' in user_agent or 'powershell' in user_agent:
+            script_name = 'cli.ps1'
+        else:
+            script_name = 'cli.sh'
+            
+    script_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), script_name)
     return send_file(script_path, mimetype='text/plain')
 
 
