@@ -178,10 +178,7 @@ class OpenRouterEngine(Engine):
         super().__init__(settings_path, verbose)
 
     def _run(self, use_vision: bool = False, override_model: str = None, override_api_key: str = None) -> str:
-        """Llama a la API de OpenRouter y retorna el texto de respuesta.
-
-        Si use_vision=True, usa el modelo multimodal y envía la imagen en base64.
-        """
+        """Llama a la API de OpenRouter y retorna el texto de respuesta."""
         api_key_to_use = override_api_key if override_api_key else self.api_key
         
         if not api_key_to_use:
@@ -191,6 +188,13 @@ class OpenRouterEngine(Engine):
             model = override_model
         else:
             model = self.model_vision if use_vision else self.model
+
+        # Modelos de fallback en orden de preferencia
+        FALLBACK_MODELS = [
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+            "deepseek/deepseek-chat:free",
+        ]
 
         headers = {
             "Authorization": f"Bearer {api_key_to_use}",
@@ -204,37 +208,52 @@ class OpenRouterEngine(Engine):
 
         max_retries = 3
         retry_delay = 5  # segundos
+        models_to_try = [model] + [m for m in FALLBACK_MODELS if m != model]
 
-        for attempt in range(max_retries):
-            try:
-                response = requests.post(self.API_URL, headers=headers, json=payload, timeout=60)
-                
-                # Si es rate limit (429), esperar y reintentar
-                if response.status_code == 429:
-                    error_data = response.json()
-                    retry_after = error_data.get("error", {}).get("metadata", {}).get("retry_after_seconds", retry_delay)
+        for current_model in models_to_try:
+            payload["model"] = current_model
+            if current_model != model:
+                print(Fore.YELLOW + f"[Engine] Modelo '{model}' no disponible. Usando fallback: {current_model}")
+
+            for attempt in range(max_retries):
+                try:
+                    response = requests.post(self.API_URL, headers=headers, json=payload, timeout=60)
                     
-                    if attempt < max_retries - 1:
-                        print(Fore.YELLOW + f"[Engine] Rate limit alcanzado. Reintentando en {retry_after}s... (intento {attempt + 1}/{max_retries})")
-                        import time
-                        time.sleep(retry_after)
+                    # Si es 404 (modelo no existe), saltar al siguiente modelo
+                    if response.status_code == 404:
+                        error_msg = response.json().get("error", {}).get("message", "")
+                        if "No endpoints found" in error_msg or "unavailable" in error_msg.lower():
+                            print(Fore.YELLOW + f"[Engine] Modelo '{current_model}' no disponible: {error_msg}")
+                            break  # Salir del loop de reintentos, ir al siguiente modelo
+
+                    # Si es rate limit (429), esperar y reintentar
+                    if response.status_code == 429:
+                        error_data = response.json()
+                        retry_after = error_data.get("error", {}).get("metadata", {}).get("retry_after_seconds", retry_delay)
+                        
+                        if attempt < max_retries - 1:
+                            print(Fore.YELLOW + f"[Engine] Rate limit alcanzado. Reintentando en {retry_after}s... (intento {attempt + 1}/{max_retries})")
+                            import time
+                            time.sleep(retry_after)
+                            continue
+                        else:
+                            return f"[Error HTTP 429] Modelo temporalmente limitado. Intenta con otro modelo o espera {retry_after}s."
+                    
+                    response.raise_for_status()
+                    return response.json()["choices"][0]["message"]["content"]
+                    
+                except requests.exceptions.HTTPError as e:
+                    if attempt < max_retries - 1 and response.status_code == 429:
                         continue
-                    else:
-                        return f"[Error HTTP 429] Modelo temporalmente limitado. Intenta con otro modelo o espera {retry_after}s."
-                
-                response.raise_for_status()
-                return response.json()["choices"][0]["message"]["content"]
-                
-            except requests.exceptions.HTTPError as e:
-                if attempt < max_retries - 1 and response.status_code == 429:
-                    continue
-                return f"[Error HTTP {response.status_code}] {response.text}"
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    print(Fore.YELLOW + f"[Engine] Error: {e}. Reintentando...")
-                    import time
-                    time.sleep(retry_delay)
-                    continue
-                return f"[Error] {e}"
+                    if response.status_code == 404:
+                        break  # Ir al siguiente modelo
+                    return f"[Error HTTP {response.status_code}] {response.text}"
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        print(Fore.YELLOW + f"[Engine] Error: {e}. Reintentando...")
+                        import time
+                        time.sleep(retry_delay)
+                        continue
+                    return f"[Error] {e}"
         
-        return "[Error] Máximo de reintentos alcanzado."
+        return "[Error] Todos los modelos de fallback agotados."
