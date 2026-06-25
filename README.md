@@ -582,11 +582,12 @@ pip install openpyxl
 - [x] Conexión a SQL Server
 - [x] Generación de consultas SQL con IA
 - [x] Reportes automáticos desde base de datos
+- [x] Soporte para imágenes en documentos (Logos / Encabezados)
+- [x] API Keys Propias por Cliente (Soporte Modelos Premium)
 - [ ] Soporte para PDF
-- [ ] API REST completa
 - [ ] Interfaz web
-- [ ] Plantillas predefinidas
-- [ ] Soporte para imágenes en documentos
+- [ ] Plantillas predefinidas y soporte nativo para carga de plantillas
+- [ ] Conexión a Base de Datos mediante túneles SSH
 - [ ] Generación de gráficos avanzados
 - [ ] Soporte para más bases de datos (MySQL, PostgreSQL)
 
