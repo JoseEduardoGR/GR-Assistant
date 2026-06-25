@@ -336,6 +336,12 @@ def generate_docx():
             script_path = "Generado por SQL Agent"
         else:
             print(Fore.CYAN + f"[API] Router -> Modo Texto Libre Detectado")
+            
+            # Imprimir el modelo que se va a usar
+            prefs = getattr(request, 'user_preferences', {})
+            active_model = prefs.get('ai_model', settings.get('model', 'Desconocido'))
+            print(Fore.YELLOW + f"[Engine] Modelo configurado para este cliente: {active_model}")
+            
             # Obtener generador
             word_gen = get_word_generator()
             
@@ -449,6 +455,12 @@ def generate_xlsx():
             script_path = "Generado por SQL Agent"
         else:
             print(Fore.CYAN + f"[API] Router -> Modo Texto Libre Detectado")
+            
+            # Imprimir el modelo que se va a usar
+            prefs = getattr(request, 'user_preferences', {})
+            active_model = prefs.get('ai_model', settings.get('model', 'Desconocido'))
+            print(Fore.YELLOW + f"[Engine] Modelo configurado para este cliente: {active_model}")
+            
             # Obtener generador
             excel_gen = get_excel_generator()
             
@@ -562,6 +574,12 @@ def generate_pptx():
             script_path = "Generado por SQL Agent"
         else:
             print(Fore.CYAN + f"[API] Router -> Modo Texto Libre Detectado")
+            
+            # Imprimir el modelo que se va a usar
+            prefs = getattr(request, 'user_preferences', {})
+            active_model = prefs.get('ai_model', settings.get('model', 'Desconocido'))
+            print(Fore.YELLOW + f"[Engine] Modelo configurado para este cliente: {active_model}")
+            
             # Obtener generador
             pptx_gen = get_pptx_generator()
             
