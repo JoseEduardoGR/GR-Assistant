@@ -254,8 +254,8 @@ menu_preferences() {
     read -p "OpenRouter API Key (Opcional): " openrouter_key < /dev/tty
     
     echo -e "\nModelos disponibles:"
-    echo "1) google/gemini-2.0-flash-exp:free (Recomendado)"
-    echo "2) meta-llama/llama-3.3-70b-instruct:free"
+    echo "1) meta-llama/llama-3.3-70b-instruct:free (Recomendado)"
+    echo "2) qwen/qwen3-coder:free"
     echo "3) qwen/qwen-2.5-72b-instruct:free"
     echo "4) deepseek/deepseek-chat:free"
     echo "5) anthropic/claude-3-haiku (Requiere API Key propia)"
@@ -265,8 +265,8 @@ menu_preferences() {
     
     ai_model=""
     case $model_op in
-        1) ai_model="google/gemini-2.0-flash-exp:free" ;;
-        2) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
+        1) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
+        2) ai_model="qwen/qwen3-coder:free" ;;
         3) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
         4) ai_model="deepseek/deepseek-chat:free" ;;
         5) ai_model="anthropic/claude-3-haiku" ;;

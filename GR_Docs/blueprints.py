@@ -723,7 +723,7 @@ def manage_preferences():
         
         ALLOWED_MODELS = [
             "meta-llama/llama-3.3-70b-instruct:free",
-            "google/gemini-2.0-flash-exp:free",
+            "qwen/qwen3-coder:free",
             "qwen/qwen-2.5-72b-instruct:free",
             "deepseek/deepseek-chat:free",
             "mistralai/mistral-nemo:free",

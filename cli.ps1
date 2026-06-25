@@ -240,8 +240,8 @@ function Menu-Preferences {
     $openrouter_key = Read-Host "OpenRouter API Key (Opcional)"
     
     Write-Host "`nModelos disponibles:"
-    Write-Host "1) google/gemini-2.0-flash-exp:free (Recomendado)"
-    Write-Host "2) meta-llama/llama-3.3-70b-instruct:free"
+    Write-Host "1) meta-llama/llama-3.3-70b-instruct:free (Recomendado)"
+    Write-Host "2) qwen/qwen3-coder:free"
     Write-Host "3) qwen/qwen-2.5-72b-instruct:free"
     Write-Host "4) deepseek/deepseek-chat:free"
     Write-Host "5) anthropic/claude-3-haiku (Requiere API Key propia)"
@@ -251,8 +251,8 @@ function Menu-Preferences {
     
     $ai_model = ""
     switch ($model_op) {
-        "1" { $ai_model = "google/gemini-2.0-flash-exp:free" }
-        "2" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
+        "1" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
+        "2" { $ai_model = "qwen/qwen3-coder:free" }
         "3" { $ai_model = "qwen/qwen-2.5-72b-instruct:free" }
         "4" { $ai_model = "deepseek/deepseek-chat:free" }
         "5" { $ai_model = "anthropic/claude-3-haiku" }
