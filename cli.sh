@@ -254,10 +254,10 @@ menu_preferences() {
     read -p "OpenRouter API Key (Opcional): " openrouter_key < /dev/tty
     
     echo -e "\nModelos disponibles:"
-    echo "1) nex-agi/nex-n2-pro:free (Recomendado)"
-    echo "2) cohere/north-mini-code:free"
-    echo "3) meta-llama/llama-3.3-70b-instruct:free"
-    echo "4) google/gemini-2.0-flash-exp:free"
+    echo "1) google/gemini-2.0-flash-exp:free (Recomendado)"
+    echo "2) meta-llama/llama-3.3-70b-instruct:free"
+    echo "3) qwen/qwen-2.5-72b-instruct:free"
+    echo "4) deepseek/deepseek-chat:free"
     echo "5) anthropic/claude-3-haiku (Requiere API Key propia)"
     echo "6) anthropic/claude-3.5-haiku (Requiere API Key propia)"
     echo "7) No cambiar modelo"
@@ -265,10 +265,10 @@ menu_preferences() {
     
     ai_model=""
     case $model_op in
-        1) ai_model="nex-agi/nex-n2-pro:free" ;;
-        2) ai_model="cohere/north-mini-code:free" ;;
-        3) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
-        4) ai_model="google/gemini-2.0-flash-exp:free" ;;
+        1) ai_model="google/gemini-2.0-flash-exp:free" ;;
+        2) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
+        3) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
+        4) ai_model="deepseek/deepseek-chat:free" ;;
         5) ai_model="anthropic/claude-3-haiku" ;;
         6) ai_model="anthropic/claude-3.5-haiku" ;;
     esac

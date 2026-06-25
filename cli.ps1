@@ -240,10 +240,10 @@ function Menu-Preferences {
     $openrouter_key = Read-Host "OpenRouter API Key (Opcional)"
     
     Write-Host "`nModelos disponibles:"
-    Write-Host "1) nex-agi/nex-n2-pro:free (Recomendado)"
-    Write-Host "2) cohere/north-mini-code:free"
-    Write-Host "3) meta-llama/llama-3.3-70b-instruct:free"
-    Write-Host "4) google/gemini-2.0-flash-exp:free"
+    Write-Host "1) google/gemini-2.0-flash-exp:free (Recomendado)"
+    Write-Host "2) meta-llama/llama-3.3-70b-instruct:free"
+    Write-Host "3) qwen/qwen-2.5-72b-instruct:free"
+    Write-Host "4) deepseek/deepseek-chat:free"
     Write-Host "5) anthropic/claude-3-haiku (Requiere API Key propia)"
     Write-Host "6) anthropic/claude-3.5-haiku (Requiere API Key propia)"
     Write-Host "7) No cambiar modelo"
@@ -251,10 +251,10 @@ function Menu-Preferences {
     
     $ai_model = ""
     switch ($model_op) {
-        "1" { $ai_model = "nex-agi/nex-n2-pro:free" }
-        "2" { $ai_model = "cohere/north-mini-code:free" }
-        "3" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
-        "4" { $ai_model = "google/gemini-2.0-flash-exp:free" }
+        "1" { $ai_model = "google/gemini-2.0-flash-exp:free" }
+        "2" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
+        "3" { $ai_model = "qwen/qwen-2.5-72b-instruct:free" }
+        "4" { $ai_model = "deepseek/deepseek-chat:free" }
         "5" { $ai_model = "anthropic/claude-3-haiku" }
         "6" { $ai_model = "anthropic/claude-3.5-haiku" }
     }
