@@ -253,25 +253,51 @@ menu_preferences() {
     echo -e "Déjalo en blanco para usar la gratuita del servidor."
     read -p "OpenRouter API Key (Opcional): " openrouter_key < /dev/tty
     
-    echo -e "\nModelos disponibles:"
-    echo "1) meta-llama/llama-3.3-70b-instruct:free (Recomendado)"
-    echo "2) qwen/qwen3-coder:free"
-    echo "3) qwen/qwen-2.5-72b-instruct:free"
-    echo "4) deepseek/deepseek-chat:free"
-    echo "5) anthropic/claude-3-haiku (Requiere API Key propia)"
-    echo "6) anthropic/claude-3.5-haiku (Requiere API Key propia)"
-    echo "7) No cambiar modelo"
-    read -p "Elige (1-7): " model_op < /dev/tty
-    
+    echo -e "\n${CYAN}Obteniendo modelos disponibles...${NC}"
     ai_model=""
-    case $model_op in
-        1) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
-        2) ai_model="qwen/qwen3-coder:free" ;;
-        3) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
-        4) ai_model="deepseek/deepseek-chat:free" ;;
-        5) ai_model="anthropic/claude-3-haiku" ;;
-        6) ai_model="anthropic/claude-3.5-haiku" ;;
-    esac
+    
+    MODELS_RESP=$(curl -s "$BASE_URL/models")
+    RECOMMENDED=$(echo "$MODELS_RESP" | grep -o '"recommended":"[^"]*' | cut -d'"' -f4)
+    
+    if [ -n "$MODELS_RESP" ] && echo "$MODELS_RESP" | grep -q '"success":true'; then
+        # Extraer la lista de modelos del JSON
+        MODEL_LIST=$(echo "$MODELS_RESP" | grep -o '"models":\[[^]]*\]' | sed 's/"models":\[//;s/\]//' | tr ',' '\n' | tr -d '"')
+        
+        echo -e "\n${CYAN}Modelos disponibles (actualizados en tiempo real):${NC}"
+        idx=1
+        declare -a MODEL_ARRAY
+        while IFS= read -r model_id; do
+            model_id=$(echo "$model_id" | xargs)  # trim
+            [ -z "$model_id" ] && continue
+            MODEL_ARRAY[$idx]="$model_id"
+            LABEL=""
+            [ "$model_id" = "$RECOMMENDED" ] && LABEL=" ⭐ (Recomendado)"
+            echo "${idx}) ${model_id}${LABEL}"
+            idx=$((idx + 1))
+        done <<< "$MODEL_LIST"
+        
+        SKIP_OP=$idx
+        echo "${SKIP_OP}) No cambiar modelo"
+        read -p "Elige (1-${SKIP_OP}): " model_op < /dev/tty
+        
+        if [ "$model_op" -ge 1 ] && [ "$model_op" -lt "$SKIP_OP" ] 2>/dev/null; then
+            ai_model="${MODEL_ARRAY[$model_op]}"
+        fi
+    else
+        echo -e "${YELLOW}No se pudo obtener la lista de modelos. Usando lista de emergencia.${NC}"
+        echo "1) cohere/north-mini-code:free (Recomendado)"
+        echo "2) meta-llama/llama-3.3-70b-instruct:free"
+        echo "3) qwen/qwen-2.5-72b-instruct:free"
+        echo "4) anthropic/claude-3.5-haiku (Requiere API Key propia)"
+        echo "5) No cambiar modelo"
+        read -p "Elige (1-5): " model_op < /dev/tty
+        case $model_op in
+            1) ai_model="cohere/north-mini-code:free" ;;
+            2) ai_model="meta-llama/llama-3.3-70b-instruct:free" ;;
+            3) ai_model="qwen/qwen-2.5-72b-instruct:free" ;;
+            4) ai_model="anthropic/claude-3.5-haiku" ;;
+        esac
+    fi
     
     # Construir el JSON manualmente para evitar jq (no siempre instalado)
     json="{"

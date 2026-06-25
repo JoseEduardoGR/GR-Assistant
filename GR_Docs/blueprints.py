@@ -188,6 +188,59 @@ def health():
     })
 
 
+import requests as _req
+import time as _time
+
+_models_cache = {"data": [], "ts": 0}
+
+def fetch_free_models():
+    """Obtiene la lista de modelos gratuitos desde OpenRouter con caché de 5 minutos."""
+    global _models_cache
+    RECOMMENDED = "cohere/north-mini-code:free"
+    CACHE_TTL = 300  # 5 minutos
+    
+    if _time.time() - _models_cache["ts"] < CACHE_TTL and _models_cache["data"]:
+        return _models_cache["data"]
+    
+    try:
+        resp = _req.get("https://openrouter.ai/api/v1/models", timeout=8)
+        all_models = resp.json().get("data", [])
+        free_ids = sorted(
+            {m["id"] for m in all_models if ":free" in m["id"]},
+            key=lambda x: (x != RECOMMENDED, x)  # Recommended primero
+        )
+        # Agregar modelos premium de pago siempre disponibles
+        paid = ["anthropic/claude-3-haiku", "anthropic/claude-3.5-haiku"]
+        result = free_ids + paid
+        _models_cache = {"data": result, "ts": _time.time()}
+        return result
+    except Exception as e:
+        print(Fore.YELLOW + f"[Models] No se pudo actualizar la lista: {e}")
+        # Devolver lista estática de emergencia
+        return [
+            "cohere/north-mini-code:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "qwen/qwen3-coder:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+            "deepseek/deepseek-chat:free",
+            "anthropic/claude-3-haiku",
+            "anthropic/claude-3.5-haiku"
+        ]
+
+
+@api_bp.route('/models', methods=['GET'])
+def list_models():
+    """Devuelve la lista actualizada de modelos gratuitos disponibles en OpenRouter."""
+    RECOMMENDED = "cohere/north-mini-code:free"
+    models = fetch_free_models()
+    return jsonify({
+        "success": True,
+        "recommended": RECOMMENDED,
+        "models": models,
+        "count": len(models)
+    })
+
+
 def extract_user_files(user_id):
     """
     Extrae los archivos de la base de datos para el usuario y los guarda localmente.
@@ -721,19 +774,11 @@ def manage_preferences():
         logo_path = data.get('logo_path', request.user_preferences.get('logo_path', ''))
         openrouter_key = data.get('openrouter_key', request.user_preferences.get('openrouter_key', ''))
         
-        ALLOWED_MODELS = [
-            "meta-llama/llama-3.3-70b-instruct:free",
-            "qwen/qwen3-coder:free",
-            "qwen/qwen-2.5-72b-instruct:free",
-            "deepseek/deepseek-chat:free",
-            "mistralai/mistral-nemo:free",
-            "cohere/north-mini-code:free",
-            "anthropic/claude-3-haiku",
-            "anthropic/claude-3.5-haiku"
-        ]
+        # Obtener modelos permitidos dinámicamente desde OpenRouter
+        ALLOWED_MODELS = fetch_free_models()
         
         if ai_model and ai_model not in ALLOWED_MODELS:
-            return jsonify({"error": f"Modelo no permitido. Debe ser uno de: {ALLOWED_MODELS}"}), 400
+            return jsonify({"error": f"Modelo no permitido. Consulta GET /models para ver la lista actualizada."}), 400
         
         import json
         if isinstance(theme_colors, dict):

@@ -239,24 +239,42 @@ function Menu-Preferences {
     Write-Host "Déjalo en blanco para usar la gratuita del servidor."
     $openrouter_key = Read-Host "OpenRouter API Key (Opcional)"
     
-    Write-Host "`nModelos disponibles:"
-    Write-Host "1) meta-llama/llama-3.3-70b-instruct:free (Recomendado)"
-    Write-Host "2) qwen/qwen3-coder:free"
-    Write-Host "3) qwen/qwen-2.5-72b-instruct:free"
-    Write-Host "4) deepseek/deepseek-chat:free"
-    Write-Host "5) anthropic/claude-3-haiku (Requiere API Key propia)"
-    Write-Host "6) anthropic/claude-3.5-haiku (Requiere API Key propia)"
-    Write-Host "7) No cambiar modelo"
-    $model_op = Read-Host "Elige (1-7)"
-    
+    Write-Host "`nObteniendo modelos disponibles..." -ForegroundColor Cyan
     $ai_model = ""
-    switch ($model_op) {
-        "1" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
-        "2" { $ai_model = "qwen/qwen3-coder:free" }
-        "3" { $ai_model = "qwen/qwen-2.5-72b-instruct:free" }
-        "4" { $ai_model = "deepseek/deepseek-chat:free" }
-        "5" { $ai_model = "anthropic/claude-3-haiku" }
-        "6" { $ai_model = "anthropic/claude-3.5-haiku" }
+    try {
+        $modelsResp = Invoke-RestMethod -Uri "$BASE_URL/models" -Method Get
+        $modelList = $modelsResp.models
+        $recommended = $modelsResp.recommended
+        
+        Write-Host "`nModelos disponibles (actualizados en tiempo real):" -ForegroundColor Cyan
+        for ($idx = 0; $idx -lt $modelList.Count; $idx++) {
+            $m = $modelList[$idx]
+            $label = if ($m -eq $recommended) { " ⭐ (Recomendado)" } else { "" }
+            $isPaid = if ($m -notmatch ":free") { " (Requiere API Key propia)" } else { "" }
+            Write-Host "$($idx+1)) $m$label$isPaid"
+        }
+        $skipOp = $modelList.Count + 1
+        Write-Host "$skipOp) No cambiar modelo"
+        
+        $model_op = Read-Host "Elige (1-$skipOp)"
+        $modelIdx = [int]$model_op - 1
+        if ($modelIdx -ge 0 -and $modelIdx -lt $modelList.Count) {
+            $ai_model = $modelList[$modelIdx]
+        }
+    } catch {
+        Write-Host "No se pudo obtener la lista de modelos. Usando lista de emergencia." -ForegroundColor Yellow
+        Write-Host "1) cohere/north-mini-code:free (Recomendado)"
+        Write-Host "2) meta-llama/llama-3.3-70b-instruct:free"
+        Write-Host "3) qwen/qwen-2.5-72b-instruct:free"
+        Write-Host "4) anthropic/claude-3.5-haiku (Requiere API Key propia)"
+        Write-Host "5) No cambiar modelo"
+        $model_op = Read-Host "Elige (1-5)"
+        switch ($model_op) {
+            "1" { $ai_model = "cohere/north-mini-code:free" }
+            "2" { $ai_model = "meta-llama/llama-3.3-70b-instruct:free" }
+            "3" { $ai_model = "qwen/qwen-2.5-72b-instruct:free" }
+            "4" { $ai_model = "anthropic/claude-3.5-haiku" }
+        }
     }
     
     $prefObj = @{}
