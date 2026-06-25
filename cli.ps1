@@ -147,6 +147,14 @@ function Menu-Report {
     $headers = @{ "x-api-key" = $apiKey }
     $outFile = "$PWD\$filename.$ext"
     
+    $activeModel = "IA"
+    try {
+        $prefResponse = Invoke-RestMethod -Uri "$BASE_URL/preferences" -Method Get -Headers $headers
+        if ($prefResponse.success -and $prefResponse.preferences.ai_model) {
+            $activeModel = $prefResponse.preferences.ai_model
+        }
+    } catch {}
+    
     $job = Start-Job -ScriptBlock {
         param($baseUrl, $ext, $headers, $body, $outFile)
         try {
@@ -160,7 +168,7 @@ function Menu-Report {
     $spinner = @("|", "/", "-", "\")
     $i = 0
     while ($job.State -eq "Running") {
-        Write-Host -NoNewline "`r[$($spinner[$i])] Generando documento... (toma de 10 a 30s)" -ForegroundColor Yellow
+        Write-Host -NoNewline "`r[$($spinner[$i])] Generando con $activeModel... (toma 10-30s)" -ForegroundColor Yellow
         $i = ($i + 1) % 4
         Start-Sleep -Milliseconds 150
     }

@@ -706,7 +706,10 @@ def manage_preferences():
         user_id = request.user['id']
         
         if request.method == 'GET':
-            return jsonify({"success": True, "preferences": request.user_preferences}), 200
+            prefs = dict(request.user_preferences) if request.user_preferences else {}
+            if not prefs.get('ai_model'):
+                prefs['ai_model'] = settings.get('model', 'Desconocido')
+            return jsonify({"success": True, "preferences": prefs}), 200
             
         # Para POST
         data = request.get_json()

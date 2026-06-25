@@ -166,6 +166,12 @@ menu_report() {
     
     echo -e "\n${YELLOW}La IA está enrutando tu solicitud, redactando y diseñando...${NC}"
     
+    # Obtener modelo activo
+    activeModel="IA"
+    PREF_RESPONSE=$(curl -s -X GET "$BASE_URL/preferences" -H "x-api-key: $API_KEY")
+    MODEL_MATCH=$(echo "$PREF_RESPONSE" | grep -o '"ai_model":\s*"[^"]*' | cut -d'"' -f4)
+    if [ -n "$MODEL_MATCH" ]; then activeModel="$MODEL_MATCH"; fi
+    
     # Realizar petición al Endpoint Universal en segundo plano para mostrar spinner
     curl -s -w "%{http_code}" -X POST "$BASE_URL/$ext" \
       -H "Content-Type: application/json" \
@@ -178,7 +184,7 @@ menu_report() {
     i=0
     while kill -0 $CURL_PID 2>/dev/null; do
         i=$(( (i+1) % 10 ))
-        printf "\r${YELLOW}${spinner[$i]} Generando documento... (toma de 10 a 30s)${NC}"
+        printf "\r${YELLOW}${spinner[$i]} Generando con $activeModel... (toma 10-30s)${NC}"
         sleep 0.1
     done
     wait $CURL_PID
